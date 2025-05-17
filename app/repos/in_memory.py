@@ -142,6 +142,18 @@ class InMemoryRepo:
                 raise NotFoundError(f"Library with ID {library_id} not found")
             self._libraries[library_id] = updated
             return True
+            
+    def update_library_if_exists(self, library_id: UUID, updated: Library) -> bool:
+        """
+        Update a library if it exists.
+        Returns True if the library was updated, False if it doesn't exist.
+        This is an atomic operation that avoids separate existence check and update.
+        """
+        with self._lock.write_lock():
+            if library_id not in self._libraries:
+                return False
+            self._libraries[library_id] = updated
+            return True
 
     def delete_library(self, library_id: UUID) -> bool:
         """

@@ -1,8 +1,6 @@
 import sys
-from typing import Annotated
 
 from loguru import logger
-from pydantic import Field
 from pydantic_settings import BaseSettings
 
 

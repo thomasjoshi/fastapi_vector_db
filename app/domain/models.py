@@ -1,8 +1,8 @@
 import random
-from typing import Dict, List
+from typing import Any, Dict, List
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 
 __all__ = ["Chunk", "Document", "Library"]
 
@@ -14,6 +14,15 @@ class Chunk(BaseModel):
     metadata: Dict[str, str] = {}
 
     model_config = {"frozen": True}
+    
+    @model_serializer
+    def serialize_model(self) -> Dict[str, Any]:
+        return {
+            "id": str(self.id),
+            "text": self.text,
+            "embedding": self.embedding,
+            "metadata": self.metadata,
+        }
 
 
 class Document(BaseModel):
@@ -22,6 +31,14 @@ class Document(BaseModel):
     metadata: Dict[str, str] = {}
 
     model_config = {"frozen": True}
+    
+    @model_serializer
+    def serialize_model(self) -> Dict[str, Any]:
+        return {
+            "id": str(self.id),
+            "chunks": self.chunks,
+            "metadata": self.metadata,
+        }
 
 
 class Library(BaseModel):
@@ -30,6 +47,14 @@ class Library(BaseModel):
     metadata: Dict[str, str] = {}
 
     model_config = {"frozen": True}
+    
+    @model_serializer
+    def serialize_model(self) -> Dict[str, Any]:
+        return {
+            "id": str(self.id),
+            "documents": self.documents,
+            "metadata": self.metadata,
+        }
 
     @classmethod
     def example(cls) -> "Library":
