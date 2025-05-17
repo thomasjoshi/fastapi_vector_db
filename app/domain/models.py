@@ -14,7 +14,7 @@ class Chunk(BaseModel):
     metadata: Dict[str, str] = {}
 
     model_config = {"frozen": True}
-    
+
     @model_serializer
     def serialize_model(self) -> Dict[str, Any]:
         return {
@@ -31,7 +31,7 @@ class Document(BaseModel):
     metadata: Dict[str, str] = {}
 
     model_config = {"frozen": True}
-    
+
     @model_serializer
     def serialize_model(self) -> Dict[str, Any]:
         return {
@@ -47,7 +47,7 @@ class Library(BaseModel):
     metadata: Dict[str, str] = {}
 
     model_config = {"frozen": True}
-    
+
     @model_serializer
     def serialize_model(self) -> Dict[str, Any]:
         return {
