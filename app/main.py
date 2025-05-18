@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from app.api.routers import libraries
+from app.api.routers import libraries, search
 from app.core.config import settings
 from app.services.errors import NotFoundError
 
@@ -32,6 +32,7 @@ async def not_found_handler(request: Request, exc: NotFoundError) -> JSONRespons
 
 # Include routers
 app.include_router(libraries.router)
+app.include_router(search.router)
 
 
 @app.get("/health", tags=["health"])

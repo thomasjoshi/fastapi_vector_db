@@ -17,10 +17,8 @@ def noop_metrics_callback(lock_type: str, duration_ms: float) -> None:
     pass
 
 
-class NotFoundError(KeyError):
-    """Raised when an entity is not found in the repository."""
-
-    pass
+# Import the NotFoundError from services.errors instead of defining it here
+from app.services.errors import NotFoundError
 
 
 class ReaderWriterLock:
@@ -304,11 +302,11 @@ class InMemoryRepo:
             for chunk in document.chunks:
                 if chunk.id == chunk_id:
                     return chunk
-            msg = (
-                f"Chunk with ID {chunk_id} not found in document {document_id} "
-                f"in library {library_id}"
+            raise NotFoundError(
+                "Chunk", 
+                str(chunk_id), 
+                f"Chunk not found in document {document_id} in library {library_id}"
             )
-            raise NotFoundError(msg)
 
     def update_chunk(
         self, library_id: UUID, document_id: UUID, chunk_id: UUID, updated: Chunk
@@ -375,7 +373,7 @@ class InMemoryRepo:
     def _get_library_or_raise(self, library_id: UUID) -> Library:
         """Get a library by ID or raise NotFoundError if it doesn't exist."""
         if library_id not in self._libraries:
-            raise NotFoundError(f"Library with ID {library_id} not found")
+            raise NotFoundError("Library", str(library_id))
         return self._libraries[library_id]
 
     def _get_document_or_raise(self, library_id: UUID, document_id: UUID) -> Document:
@@ -385,5 +383,5 @@ class InMemoryRepo:
             if doc.id == document_id:
                 return doc
         raise NotFoundError(
-            f"Document with ID {document_id} not found in library {library_id}"
+            "Document", str(document_id), f"Document not found in library {library_id}"
         )
