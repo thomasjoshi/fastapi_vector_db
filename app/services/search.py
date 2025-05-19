@@ -3,18 +3,18 @@ Search service for vector similarity search.
 """
 
 import threading
-from typing import Dict, List, Type, TypeVar
+import time
+from typing import Dict, List, Tuple, Optional, Type, TypeVar, Generic, Any
 from uuid import UUID
 
-from app.domain.models import Chunk
-from app.indexing import VectorIndex
+from app.domain.models import Chunk, Library
+from app.indexing.linear_search import LinearSearchCosine
 from app.repos.in_memory import InMemoryRepo
-from app.services.errors import NotFoundError
+from app.services.exceptions import NotFoundError, ValidationError
 
-T = TypeVar("T")
+T = TypeVar('T')
 
-
-class SearchService:
+class SearchService(Generic[T]):
     """
     Service for vector similarity search across libraries.
 
@@ -22,22 +22,20 @@ class SearchService:
     methods to index libraries and query for similar chunks.
     """
 
-    def __init__(
-        self, repo: InMemoryRepo, index_factory: Type[VectorIndex[UUID]]
-    ) -> None:
+    def __init__(self, repo: InMemoryRepo, index_class: Type = LinearSearchCosine) -> None:
         """
         Initialize the search service.
 
         Args:
             repo: Repository for accessing libraries and chunks
-            index_factory: Factory function to create vector indices
+            index_class: Vector index implementation class to use (default: LinearSearchCosine)
         """
         self._repo = repo
-        self._index_factory = index_factory
-        self._indices: Dict[UUID, VectorIndex[UUID]] = {}
+        self._index_class = index_class
+        self._indices: Dict[UUID, Any] = {}
         self._lock = threading.RLock()  # Reentrant lock for thread safety
 
-    def index_library(self, library_id: UUID) -> int:
+    async def index_library(self, library_id: UUID) -> int:
         """
         Index all chunks in a library.
 
@@ -49,71 +47,132 @@ class SearchService:
 
         Raises:
             NotFoundError: If the library does not exist
+            ValidationError: If chunks have inconsistent dimensions
         """
+        start_time = time.time()
+        
         with self._lock:
-            # Get the library from the repository
-            library = self._repo.get_library(library_id)
+            # Verify library exists
+            library = await self._repo.get_library(library_id)
+            
+            # Get all chunks in the library
+            chunks: List[Chunk] = []
+            # Since we don't have list_documents, we'll extract them from the library
+            documents = library.documents
+            
+            for document in documents:
+                # Since we don't have list_chunks, we'll extract them from the document
+                chunks.extend(document.chunks)
 
-            # Create a new index for this library
-            index = self._index_factory()
+            if not chunks:
+                # Create empty index if no chunks
+                self._indices[library_id] = self._index_class[UUID](dim=0)
+                return 0
 
-            # Count the number of chunks indexed
-            chunks_indexed = 0
-
-            # Add all chunks to the index
-            for document in library.documents:
-                for chunk in document.chunks:
-                    if chunk.embedding:  # Skip chunks without embeddings
-                        index.add(chunk.id, chunk.embedding)
-                        chunks_indexed += 1
-
-            # Store the index
+            # Determine dimension from first chunk
+            dim = len(chunks[0].embedding)
+            
+            # Create index
+            index = self._index_class[UUID](dim=dim)
+            
+            # Add all chunks to index
+            embeddings = []
+            ids = []
+            
+            for chunk in chunks:
+                if len(chunk.embedding) != dim:
+                    raise ValidationError(f"Chunk {chunk.id} has embedding dimension {len(chunk.embedding)}, expected {dim}")
+                embeddings.append(chunk.embedding)
+                ids.append(chunk.id)
+            
+            # Build the index
+            index.build(embeddings, ids)
             self._indices[library_id] = index
+            
+            end_time = time.time()
+            print(f"Indexed {len(chunks)} chunks in {end_time - start_time:.2f}s")
+            
+            return len(chunks)
 
-            return chunks_indexed
-
-    def query(
-        self, library_id: UUID, embedding: List[float], k: int = 5
-    ) -> List[Chunk]:
+    async def query(self, library_id: UUID, embedding: List[float], k: int = 5) -> List[Chunk]:
         """
-        Query for similar chunks in a library.
-
+        Search for chunks in a library and return just the chunks (without scores).
+        
         Args:
-            library_id: ID of the library to query
+            library_id: ID of the library to search in
             embedding: Query vector
             k: Number of results to return
-
+            
         Returns:
-            List of chunks, sorted by similarity in descending order
-
+            List of chunks sorted by similarity to the query vector
+            
         Raises:
-            NotFoundError: If the library does not exist or is not indexed
+            NotFoundError: If the library does not exist
+            ValidationError: If the library is not indexed or query vector has wrong dimension
         """
+        # Call search and extract just the chunks
+        results = await self.search(library_id, embedding, k)
+        return [chunk for chunk, _ in results]
+    
+    async def search(
+        self, library_id: UUID, embedding: List[float], k: int = 5
+    ) -> List[Tuple[Chunk, float]]:
+        """
+        Search for similar chunks in a library.
+        
+        Args:
+            library_id: ID of the library to search in
+            embedding: Query vector
+            k: Number of results to return
+            
+        Returns:
+            List of (chunk, score) tuples, sorted by score in descending order
+            
+        Raises:
+            NotFoundError: If the library does not exist
+            ValidationError: If the library is not indexed or query vector has wrong dimension
+        """
+        start_time = time.time()
+        
         with self._lock:
-            # Check if the library exists
-            library = self._repo.get_library(library_id)
+            # Verify library exists
+            library = await self._repo.get_library(library_id)
 
-            # Check if the library is indexed
+            # Check if library is indexed
             if library_id not in self._indices:
-                raise NotFoundError(f"Library {library_id} is not indexed")
+                raise ValidationError(f"Library {library_id} is not indexed")
 
-            # Query the index
             index = self._indices[library_id]
-            results = index.query(embedding, k)
+            
+            # Check embedding dimension
+            if index.size() > 0 and len(embedding) != index._dim:
+                raise ValidationError(f"Query embedding dimension {len(embedding)} does not match index dimension {index._dim}")
 
-            # Retrieve the chunks
-            chunks = []
-            for chunk_id, _ in results:
-                # Find the document containing this chunk
-                for document in library.documents:
-                    for chunk in document.chunks:
-                        if chunk.id == chunk_id:
-                            chunks.append(chunk)
+            # Search index
+            results = index.query(embedding, k=k)
+            
+            # Fetch chunks
+            hits = []
+            for chunk_id, score in results:
+                # Retrieve the chunk from documents in the library
+                chunk = None
+                for doc in library.documents:
+                    for c in doc.chunks:
+                        if c.id == chunk_id:
+                            chunk = c
                             break
+                    if chunk:
+                        break
+                        
+                if chunk:  # Skip if chunk was deleted
+                    hits.append((chunk, score))
+            
+            end_time = time.time()
+            print(f"Search completed in {end_time - start_time:.4f}s")
+            
+            return hits
 
-            return chunks
-
-    def reindex_library(self, library_id: UUID) -> int:
+    async def reindex_library(self, library_id: UUID) -> int:
         """
         Reindex a library, replacing any existing index.
 
@@ -132,4 +191,4 @@ class SearchService:
                 del self._indices[library_id]
 
             # Index the library
-            return self.index_library(library_id)
+            return await self.index_library(library_id)

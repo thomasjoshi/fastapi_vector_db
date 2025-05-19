@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Response, status
 from fastapi.concurrency import run_in_threadpool
 
-from app.api.deps import get_library_service
+from app.api.dependencies import get_library_service
 from app.api.schemas.library import (
     LibraryCreate,
     LibraryRead,
@@ -34,8 +34,8 @@ async def create_library(
         metadata=library.metadata,
     )
 
-    # Run in threadpool to avoid blocking
-    library_id = await run_in_threadpool(library_service.add_library, domain_library)
+    # Call the async service method directly
+    library_id = await library_service.add_library(domain_library)
 
     # Set Location header for REST best practices
     response.headers["Location"] = f"/libraries/{library_id}"
@@ -52,8 +52,8 @@ async def get_library(
     Get a library by ID.
     Raises 404 if the library does not exist.
     """
-    # Run in threadpool to avoid blocking
-    domain_library = await run_in_threadpool(library_service.get_library, library_id)
+    # Call the async service method directly
+    domain_library = await library_service.get_library(library_id)
 
     # Convert from domain model to API schema
     return LibraryRead(
@@ -74,7 +74,7 @@ async def update_library(
     Raises 404 if the library does not exist.
     """
     # First get the existing library to ensure it exists
-    domain_library = await run_in_threadpool(library_service.get_library, library_id)
+    domain_library = await library_service.get_library(library_id)
 
     # Update with new values
     documents = (
@@ -90,8 +90,8 @@ async def update_library(
         metadata=metadata,
     )
 
-    # Run in threadpool to avoid blocking
-    await run_in_threadpool(library_service.update_library, library_id, updated_library)
+    # Call the async service method directly
+    await library_service.update_library(library_id, updated_library)
 
 
 @router.delete("/{library_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -103,5 +103,5 @@ async def delete_library(
     Delete a library by ID.
     Raises 404 if the library does not exist.
     """
-    # Run in threadpool to avoid blocking
-    await run_in_threadpool(library_service.delete_library, library_id)
+    # Call the async service method directly
+    await library_service.delete_library(library_id)

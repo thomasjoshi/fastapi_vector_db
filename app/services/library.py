@@ -6,7 +6,7 @@ from loguru import logger
 from app.domain.models import Library
 from app.repos.in_memory import InMemoryRepo
 from app.repos.in_memory import NotFoundError as RepoNotFoundError
-from app.services.errors import NotFoundError
+from app.services.exceptions import NotFoundError
 
 
 class MetricsCallback(Protocol):
@@ -43,7 +43,7 @@ class LibraryService:
         self._repo = repo
         self._metrics = metrics_callback
 
-    def _ensure_exists(self, library_id: UUID) -> None:
+    async def _ensure_exists(self, library_id: UUID) -> None:
         """
         Ensure that a library with the given ID exists.
         Raises NotFoundError if the library does not exist.
@@ -55,12 +55,12 @@ class LibraryService:
             NotFoundError: If the library does not exist
         """
         try:
-            self._repo.get_library(library_id)
+            await self._repo.get_library(library_id)
         except RepoNotFoundError as e:
             logger.warning(f"Library with ID {library_id} not found")
-            raise NotFoundError("Library", str(library_id)) from e
+            raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id) from e
 
-    def add_library(self, library: Library) -> UUID:
+    async def add_library(self, library: Library) -> UUID:
         """
         Add a library to the repository.
         Returns the ID of the added library.
@@ -74,10 +74,10 @@ class LibraryService:
         logger.info(f"Adding library with ID {library.id}")
         self._metrics("library.add", library_id=str(library.id))
 
-        self._repo.add_library(library)
+        await self._repo.add_library(library)
         return library.id
 
-    def get_library(self, library_id: UUID) -> Library:
+    async def get_library(self, library_id: UUID) -> Library:
         """
         Get a library by ID.
         Raises NotFoundError if the library does not exist.
@@ -95,12 +95,12 @@ class LibraryService:
         self._metrics("library.get", library_id=str(library_id))
 
         try:
-            return self._repo.get_library(library_id)
+            return await self._repo.get_library(library_id)
         except RepoNotFoundError as e:
             logger.warning(f"Library with ID {library_id} not found")
-            raise NotFoundError("Library", str(library_id)) from e
+            raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id) from e
 
-    def update_library(self, library_id: UUID, updated: Library) -> None:
+    async def update_library(self, library_id: UUID, updated: Library) -> None:
         """
         Update a library.
         Raises NotFoundError if the library does not exist.
@@ -116,13 +116,13 @@ class LibraryService:
         self._metrics("library.update", library_id=str(library_id))
 
         # Try atomic update first
-        if not self._repo.update_library_if_exists(library_id, updated):
+        if not await self._repo.update_library_if_exists(library_id, updated):
             # If atomic update fails, ensure the library exists to get the proper error
-            self._ensure_exists(library_id)
+            await self._ensure_exists(library_id)
             # This should never happen if _ensure_exists doesn't raise
             raise RuntimeError(f"Failed to update library with ID {library_id}")
 
-    def delete_library(self, library_id: UUID) -> None:
+    async def delete_library(self, library_id: UUID) -> None:
         """
         Delete a library by ID.
         Raises NotFoundError if the library does not exist.
@@ -137,7 +137,7 @@ class LibraryService:
         self._metrics("library.delete", library_id=str(library_id))
 
         try:
-            self._repo.delete_library(library_id)
+            await self._repo.delete_library(library_id)
         except RepoNotFoundError as e:
             logger.warning(f"Library with ID {library_id} not found")
-            raise NotFoundError("Library", str(library_id)) from e
+            raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id) from e

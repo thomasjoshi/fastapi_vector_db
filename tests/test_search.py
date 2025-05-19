@@ -5,13 +5,14 @@ Tests for search functionality.
 import pytest
 import threading
 import time
+import asyncio
 from uuid import UUID, uuid4
 from typing import List, Dict, Any
 
 from app.domain.models import Library, Document, Chunk
 from app.repos.in_memory import InMemoryRepo
 from app.services.search import SearchService
-from app.indexing.brute import BruteForceCosine
+from app.indexing.linear_search import LinearSearchCosine
 from app.indexing.ball_tree import BallTreeCosine
 
 
@@ -56,23 +57,24 @@ def create_test_library() -> Library:
     return library
 
 
-def test_brute_force_search():
-    """Test BruteForceCosine search."""
+@pytest.mark.asyncio
+async def test_brute_force_search():
+    """Test LinearSearchCosine search."""
     # Create repo and add a library
     repo = InMemoryRepo()
     library = create_test_library()
-    repo.add_library(library)
+    await repo.add_library(library)
     
-    # Create search service with BruteForceCosine
-    search_service = SearchService(repo, BruteForceCosine)
+    # Create search service with LinearSearchCosine
+    search_service = SearchService(repo, LinearSearchCosine)
     
     # Index the library
-    chunks_indexed = search_service.index_library(library.id)
+    chunks_indexed = await search_service.index_library(library.id)
     assert chunks_indexed == 3
     
     # Query for vectors similar to [1.0, 0.1, 0.1]
     # This should be closest to the first chunk
-    results = search_service.query(library.id, [1.0, 0.1, 0.1], k=3)
+    results = await search_service.query(library.id, [1.0, 0.1, 0.1], k=3)
     
     # Verify results
     assert len(results) == 3
@@ -81,23 +83,24 @@ def test_brute_force_search():
     assert results[2].text in ["This is the second chunk", "This is the third chunk"]
 
 
-def test_ball_tree_search():
+@pytest.mark.asyncio
+async def test_ball_tree_search():
     """Test BallTreeCosine search."""
     # Create repo and add a library
     repo = InMemoryRepo()
     library = create_test_library()
-    repo.add_library(library)
+    await repo.add_library(library)
     
     # Create search service with BallTreeCosine
     search_service = SearchService(repo, BallTreeCosine)
     
     # Index the library
-    chunks_indexed = search_service.index_library(library.id)
+    chunks_indexed = await search_service.index_library(library.id)
     assert chunks_indexed == 3
     
     # Query for vectors similar to [0.1, 0.0, 1.0]
     # This should be closest to the third chunk
-    results = search_service.query(library.id, [0.1, 0.0, 1.0], k=3)
+    results = await search_service.query(library.id, [0.1, 0.0, 1.0], k=3)
     
     # Verify results
     assert len(results) == 3
@@ -106,71 +109,55 @@ def test_ball_tree_search():
     assert results[2].text in ["This is the first chunk", "This is the second chunk"]
 
 
-def test_search_not_indexed():
+@pytest.mark.asyncio
+async def test_search_not_indexed():
     """Test searching a library that hasn't been indexed."""
     # Create repo and add a library
     repo = InMemoryRepo()
     library = create_test_library()
-    repo.add_library(library)
+    await repo.add_library(library)
     
     # Create search service
-    search_service = SearchService(repo, BruteForceCosine)
+    search_service = SearchService(repo, LinearSearchCosine)
     
     # Try to query without indexing first
     with pytest.raises(Exception):
-        search_service.query(library.id, [1.0, 0.0, 0.0], k=3)
+        await search_service.query(library.id, [1.0, 0.0, 0.0], k=3)
 
 
-def test_concurrent_index_search():
-    """Test concurrent indexing and searching."""
+@pytest.mark.asyncio
+async def test_concurrent_index_search():
+    """Test concurrent indexing and searching with asyncio tasks."""
     # Create repo and add a library
     repo = InMemoryRepo()
     library = create_test_library()
-    repo.add_library(library)
+    await repo.add_library(library)
     
     # Create search service
-    search_service = SearchService(repo, BruteForceCosine)
+    search_service = SearchService(repo, LinearSearchCosine)
     
-    # Variables for thread communication
-    index_done = threading.Event()
-    search_results = []
-    search_error = None
+    # Create tasks for concurrent indexing and searching
+    async def index_task():
+        return await search_service.index_library(library.id)
     
-    def index_thread():
-        """Thread function for indexing."""
-        search_service.index_library(library.id)
-        index_done.set()
-    
-    def search_thread():
-        """Thread function for searching."""
-        nonlocal search_results, search_error
-        
-        # Wait a bit to ensure indexing has started
-        time.sleep(0.01)
-        
+    async def search_task():
+        # Small delay to ensure indexing starts first
+        await asyncio.sleep(0.01)
         try:
-            # Try to search while indexing might still be in progress
-            results = search_service.query(library.id, [1.0, 0.0, 0.0], k=3)
-            search_results = results
+            return await search_service.query(library.id, [1.0, 0.1, 0.1], k=3)
         except Exception as e:
-            search_error = e
+            return e
     
-    # Start the threads
-    t1 = threading.Thread(target=index_thread)
-    t2 = threading.Thread(target=search_thread)
+    # Run both tasks concurrently
+    index_task_obj = asyncio.create_task(index_task())
+    search_task_obj = asyncio.create_task(search_task())
     
-    t1.start()
-    t2.start()
-    
-    # Wait for both threads to finish
-    t1.join()
-    t2.join()
+    # Wait for both tasks to complete
+    index_result = await index_task_obj
+    search_results = await search_task_obj
     
     # Verify results
-    if search_error is None:
-        # If search succeeded, verify the results
-        assert len(search_results) == 3
-        assert search_results[0].text == "This is the first chunk"
-    else:
-        # If search failed, it should be because the library wasn't indexed yet
-        assert "not indexed" in str(search_error)
+    assert index_result == 3  # Number of chunks indexed
+    assert isinstance(search_results, list)  # Should not be an exception
+    assert len(search_results) == 3
+    assert search_results[0].text == "This is the first chunk"

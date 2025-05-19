@@ -1,5 +1,5 @@
 """
-Tests for the BruteForceCosine vector index.
+Tests for the LinearSearchCosine vector index.
 """
 
 import threading
@@ -8,20 +8,20 @@ import time
 import numpy as np
 import pytest
 
-from app.indexing.brute import BruteForceCosine, DuplicateVectorError
+from app.indexing.linear_search import LinearSearchCosine, DuplicateVectorError
 
 
-class TestBruteForceCosine:
-    """Test suite for BruteForceCosine."""
+class TestLinearSearchCosine:
+    """Test suite for LinearSearchCosine."""
 
     def test_init(self):
         """Test initialization with dimension."""
-        index = BruteForceCosine[str](dim=3)
+        index = LinearSearchCosine[str](dim=3)
         assert index.size() == 0
 
     def test_dimension_validation(self):
         """Test dimension validation."""
-        index = BruteForceCosine[str](dim=3)
+        index = LinearSearchCosine[str](dim=3)
 
         # Valid dimension
         index.add("vec1", [1.0, 0.0, 0.0])
@@ -41,7 +41,7 @@ class TestBruteForceCosine:
 
     def test_duplicate_id_handling(self):
         """Test duplicate ID handling."""
-        index = BruteForceCosine[str](dim=3)
+        index = LinearSearchCosine[str](dim=3)
 
         # Add a vector
         index.add("vec1", [1.0, 0.0, 0.0])
@@ -72,7 +72,7 @@ class TestBruteForceCosine:
         ids = ["x", "y", "z", "xy", "xz"]
 
         # Create index
-        index = BruteForceCosine[str](dim=3)
+        index = LinearSearchCosine[str](dim=3)
         index.build(vectors, ids)
 
         # Query along x-axis
@@ -104,14 +104,14 @@ class TestBruteForceCosine:
         ids = ["x", "y", "z"]
 
         # Create and populate index
-        index = BruteForceCosine[str](dim=3)
+        index = LinearSearchCosine[str](dim=3)
         index.build(vectors, ids)
 
         # Serialize
         data = index.to_bytes()
 
         # Deserialize
-        loaded_index = BruteForceCosine.from_bytes(data)
+        loaded_index = LinearSearchCosine.from_bytes(data)
 
         # Verify dimensions
         assert loaded_index._dim == 3
@@ -128,7 +128,7 @@ class TestBruteForceCosine:
 
     def test_thread_safety(self):
         """Test thread safety."""
-        index = BruteForceCosine[int](dim=3)
+        index = LinearSearchCosine[int](dim=3)
 
         # Number of threads and operations
         n_threads = 10
@@ -178,7 +178,7 @@ class TestBruteForceCosine:
             metrics[op].append(duration_ms)
 
         # Create index with observer
-        index = BruteForceCosine[str](dim=3, observer=observer)
+        index = LinearSearchCosine[str](dim=3, observer=observer)
 
         # Perform operations
         index.add("vec1", [1.0, 0.0, 0.0])
@@ -206,14 +206,14 @@ class TestBruteForceCosine:
 
         # Measure time for individual adds
         start_time = time.time()
-        index1 = BruteForceCosine[str](dim=dim)
+        index1 = LinearSearchCosine[str](dim=dim)
         for id_val, vector in zip(ids, vectors):
             index1.add(id_val, vector)
         individual_time = time.time() - start_time
 
         # Measure time for bulk build
         start_time = time.time()
-        index2 = BruteForceCosine[str](dim=dim)
+        index2 = LinearSearchCosine[str](dim=dim)
         index2.build(vectors, ids)
         bulk_time = time.time() - start_time
 

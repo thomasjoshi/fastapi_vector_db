@@ -5,42 +5,23 @@ Router for search operations.
 from typing import List
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
-from fastapi.concurrency import run_in_threadpool
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.deps import get_library_service
-from app.api.schemas.chunk import ChunkRead, IndexResponse, SearchQuery
-from app.indexing.brute import BruteForceCosine
-from app.services.errors import NotFoundError
-from app.services.library import LibraryService
+from app.api.schemas.chunk import ChunkRead, IndexResponse, SearchQuery, SearchResponse, SearchHit
+from app.services.exceptions import NotFoundError, ValidationError
 from app.services.search import SearchService
-
-
-# Create the search service with BruteForce index by default
-# In a real application, this would be configurable
-def get_search_service(library_service: LibraryService = None) -> SearchService:
-    """Get the search service."""
-    # Use dependency injection to get the library service
-    if library_service is None:
-        library_service = get_library_service()
-    # Use the same repo as the library service
-    repo = library_service._repo
-    # Use BruteForce index by default
-    return SearchService(repo, BruteForceCosine)
+from app.api.dependencies import get_search_service
 
 
 # Create router
-router = APIRouter(prefix="/libraries", tags=["search"])
+router = APIRouter(tags=["search"])
 
 
-@router.post("/{library_id}/index", response_model=IndexResponse)
+@router.post("/libraries/{library_id}/index", response_model=IndexResponse)
 async def index_library(
     library_id: UUID,
-    search_service: SearchService = None,
+    service: SearchService = Depends(get_search_service),
 ) -> IndexResponse:
-    # Use dependency injection
-    if search_service is None:
-        search_service = get_search_service()
     """
     Index a library for vector search.
     
@@ -48,51 +29,53 @@ async def index_library(
     enabling efficient similarity search.
     """
     try:
-        # Run in threadpool to avoid blocking
-        chunks_indexed = await run_in_threadpool(
-            search_service.index_library, library_id
-        )
+        chunks_indexed = await service.index_library(library_id)
         return IndexResponse(chunks_indexed=chunks_indexed)
     except NotFoundError as e:
-        # Re-raise as HTTPException
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(e),
         ) from e
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e),
+        ) from e
 
 
-@router.post("/{library_id}/search", response_model=List[ChunkRead])
+@router.post("/libraries/{library_id}/search", response_model=SearchResponse)
 async def search_library(
     library_id: UUID,
     query: SearchQuery,
-    search_service: SearchService = None,
-) -> List[ChunkRead]:
-    # Use dependency injection
-    if search_service is None:
-        search_service = get_search_service()
+    service: SearchService = Depends(get_search_service),
+) -> SearchResponse:
     """
     Search for similar chunks in a library.
     
     Returns a list of chunks sorted by similarity to the query vector.
     """
     try:
-        # Run in threadpool to avoid blocking
-        chunks = await run_in_threadpool(
-            search_service.query, library_id, query.embedding, query.k
-        )
-        # Convert to ChunkRead schema
-        return [
-            ChunkRead(
+        results = await service.search(library_id, query.embedding, query.k)
+        
+        # Convert to SearchResponse schema
+        hits = []
+        for chunk, score in results:
+            chunk_read = ChunkRead(
                 id=chunk.id,
                 text=chunk.text,
                 embedding=chunk.embedding,
                 metadata=chunk.metadata,
             )
-            for chunk in chunks
-        ]
+            hits.append(SearchHit(chunk=chunk_read, score=score))
+            
+        return SearchResponse(hits=hits)
     except NotFoundError as e:
-        # Re-raise as HTTPException
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        ) from e
+    except ValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(e),
         ) from e

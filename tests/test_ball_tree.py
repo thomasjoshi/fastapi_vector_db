@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from app.indexing.ball_tree import BallTreeCosine, DuplicateVectorError
-from app.indexing.brute import BruteForceCosine
+from app.indexing.linear_search import LinearSearchCosine
 
 
 class TestBallTreeCosine:
@@ -101,11 +101,11 @@ class TestBallTreeCosine:
         ids = [f"vec{i}" for i in range(n_vectors)]
 
         # Create both indices
-        brute_index = BruteForceCosine[str](dim=dim)
+        linear_index = LinearSearchCosine[str](dim=dim)
         ball_index = BallTreeCosine[str](dim=dim)
 
         # Add vectors and build
-        brute_index.build(vectors, ids)
+        linear_index.build(vectors, ids)
         ball_index.build(vectors, ids)
 
         # Create query vectors
@@ -113,17 +113,17 @@ class TestBallTreeCosine:
 
         # Compare results
         for query in queries:
-            brute_results = brute_index.query(query, k=10)
+            linear_results = linear_index.query(query, k=10)
             ball_results = ball_index.query(query, k=10)
 
             # For this test, we just verify both indices return expected results
             # Ordering may differ due to implementation differences and
             # floating point precision issues
-            assert len(brute_results) == 10
+            assert len(linear_results) == 10
             assert len(ball_results) == 10
 
             # Check that the similarity scores are in the expected range (-1 to 1)
-            for _, sim in brute_results:
+            for _, sim in linear_results:
                 assert -1.0 <= sim <= 1.0
             for _, sim in ball_results:
                 assert -1.0 <= sim <= 1.0
