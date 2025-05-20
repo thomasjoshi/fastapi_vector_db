@@ -50,54 +50,85 @@ class SearchService(Generic[T]):
 
         Raises:
             NotFoundError: If the library does not exist
-            ValidationError: If chunks have inconsistent dimensions
+            ValidationError: If chunks have inconsistent dimensions or invalid embeddings
         """
+        from loguru import logger
         start_time = time.time()
 
-        with self._lock:
-            # Verify library exists
-            library = await self._repo.get_library(library_id)
+        try:
+            with self._lock:
+                # Verify library exists
+                library = await self._repo.get_library(library_id)
+                
+                logger.info(f"Starting indexing for library {library_id}")
 
-            # Get all chunks in the library
-            chunks: List[Chunk] = []
-            # Since we don't have list_documents, we'll extract them from the library
-            documents = library.documents
+                # Get all chunks in the library
+                chunks: List[Chunk] = []
+                # Extract documents from the library
+                documents = library.documents
+                logger.debug(f"Found {len(documents)} documents in library {library_id}")
 
-            for document in documents:
-                # Since we don't have list_chunks, we'll extract them from the document
-                chunks.extend(document.chunks)
+                for document in documents:
+                    # Extract chunks from the document
+                    chunks.extend(document.chunks)
 
-            if not chunks:
-                # Create empty index if no chunks
-                self._indices[library_id] = self._index_class[UUID](dim=0)
-                return 0
+                logger.info(f"Found {len(chunks)} chunks to index in library {library_id}")
 
-            # Determine dimension from first chunk
-            dim = len(chunks[0].embedding)
+                if not chunks:
+                    # Create empty index if no chunks
+                    logger.warning(f"No chunks found in library {library_id}, creating empty index")
+                    self._indices[library_id] = self._index_class[UUID](dim=0)
+                    return 0
 
-            # Create index
-            index = self._index_class[UUID](dim=dim)
-
-            # Add all chunks to index
-            embeddings = []
-            ids = []
-
-            for chunk in chunks:
-                if len(chunk.embedding) != dim:
+                # Verify all chunks have valid embeddings
+                invalid_chunks = [chunk for chunk in chunks if not chunk.embedding]
+                if invalid_chunks:
+                    chunk_ids = [str(chunk.id) for chunk in invalid_chunks[:5]]
+                    logger.error(f"Found {len(invalid_chunks)} chunks with empty embeddings: {', '.join(chunk_ids)}")
                     raise ValidationError(
-                        f"Chunk {chunk.id} has embedding dimension {len(chunk.embedding)}, expected {dim}"
+                        f"Found {len(invalid_chunks)} chunks with empty embeddings. First few: {', '.join(chunk_ids)}"
                     )
-                embeddings.append(chunk.embedding)
-                ids.append(chunk.id)
 
-            # Build the index
-            index.build(embeddings, ids)
-            self._indices[library_id] = index
+                # Determine dimension from first chunk
+                dim = len(chunks[0].embedding)
+                logger.debug(f"Embedding dimension: {dim}")
 
-            end_time = time.time()
-            print(f"Indexed {len(chunks)} chunks in {end_time - start_time:.2f}s")
+                # Create index
+                index = self._index_class[UUID](dim=dim)
 
-            return len(chunks)
+                # Add all chunks to index
+                embeddings = []
+                ids = []
+
+                # Validate embedding dimensions
+                for i, chunk in enumerate(chunks):
+                    try:
+                        if len(chunk.embedding) != dim:
+                            raise ValidationError(
+                                f"Chunk {chunk.id} has embedding dimension {len(chunk.embedding)}, expected {dim}"
+                            )
+                        embeddings.append(chunk.embedding)
+                        ids.append(chunk.id)
+                    except Exception as e:
+                        logger.error(f"Error processing chunk {i} (ID: {chunk.id}): {str(e)}")
+                        raise ValidationError(f"Error processing chunk {chunk.id}: {str(e)}")
+
+                # Build the index
+                logger.info(f"Building index with {len(embeddings)} embeddings")
+                try:
+                    index.build(embeddings, ids)
+                    self._indices[library_id] = index
+                except Exception as e:
+                    logger.error(f"Failed to build index: {str(e)}")
+                    raise ValidationError(f"Failed to build index: {str(e)}")
+
+                end_time = time.time()
+                logger.info(f"Indexed {len(chunks)} chunks in {end_time - start_time:.2f}s")
+
+                return len(chunks)
+        except Exception as e:
+            logger.error(f"Error during library indexing: {str(e)}")
+            raise
 
     async def query(
         self, library_id: UUID, embedding: List[float], k: int = 5

@@ -32,18 +32,30 @@ async def index_library(
     This operation builds a vector index for the library,
     enabling efficient similarity search.
     """
+    from loguru import logger
+    
     try:
+        logger.info(f"Starting indexing for library {library_id}")
         chunks_indexed = await service.index_library(library_id)
+        logger.info(f"Successfully indexed {chunks_indexed} chunks in library {library_id}")
         return IndexResponse(chunks_indexed=chunks_indexed)
     except NotFoundError as e:
+        logger.error(f"Library not found: {library_id} - {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
+            detail=f"Library with ID {library_id} not found",
         ) from e
     except ValidationError as e:
+        logger.error(f"Validation error during indexing of library {library_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e),
+            detail=f"Error indexing library: {str(e)}",
+        ) from e
+    except Exception as e:
+        logger.error(f"Unexpected error during indexing of library {library_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during indexing",
         ) from e
 
 
@@ -58,7 +70,15 @@ async def search_library(
 
     Returns a list of chunks sorted by similarity to the query vector.
     """
+    from loguru import logger
+    
     try:
+        # Log search request
+        logger.info(f"Searching library {library_id} with query of dimension {len(query.embedding)}")
+        if query.metadata_filters:
+            logger.info(f"Applying metadata filters: {query.metadata_filters}")
+        
+        # Execute search
         results = await service.search(
             library_id, 
             query.embedding, 
@@ -77,14 +97,23 @@ async def search_library(
             )
             hits.append(SearchHit(chunk=chunk_read, score=score))
 
+        logger.info(f"Search returned {len(hits)} results from library {library_id}")
         return SearchResponse(hits=hits)
     except NotFoundError as e:
+        logger.error(f"Library not found: {library_id} - {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(e),
+            detail=f"Library with ID {library_id} not found",
         ) from e
     except ValidationError as e:
+        logger.error(f"Validation error during search in library {library_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e),
+            detail=f"Error searching library: {str(e)}",
+        ) from e
+    except Exception as e:
+        logger.error(f"Unexpected error during search in library {library_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during search",
         ) from e

@@ -30,14 +30,13 @@ async def create_document(
         f"Creating document in library with ID {library_id}, type: {type(library_id)}"
     )
 
-    # Generate an ID for the document if not provided
+    # Create a document with metadata from the request
     document = Document(chunks=[], metadata=document_data.metadata)
-    if document.id is None:
-        from uuid import uuid4
-
-        document.id = uuid4()
-
+    
+    # Add the document to the library
     result = await service.add_document(library_id, document)
+    
+    # Return the document with consistent ID formatting
     return DocumentRead(id=result.id, metadata=result.metadata)
 
 
