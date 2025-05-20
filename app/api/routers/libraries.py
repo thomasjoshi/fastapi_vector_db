@@ -17,15 +17,15 @@ get_service = Depends(get_library_service)
 router = APIRouter(prefix="/libraries", tags=["libraries"])
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=UUID)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=LibraryRead)
 async def create_library(
     library: LibraryCreate,
     response: Response,
     library_service: LibraryService = get_service,
-) -> UUID:
+) -> LibraryRead:
     """
     Create a new library.
-    Returns the ID of the created library and sets the Location header.
+    Returns the created library with its ID and sets the Location header.
     """
     # Convert from API schema to domain model
     domain_library = Library(
@@ -39,7 +39,15 @@ async def create_library(
     # Set Location header for REST best practices
     response.headers["Location"] = f"/libraries/{library_id}"
 
-    return library_id
+    # Get the complete library after creation
+    created_library = await library_service.get_library(library_id)
+    
+    # Return the library with its ID
+    return LibraryRead(
+        id=created_library.id,
+        documents=created_library.documents,
+        metadata=created_library.metadata,
+    )
 
 
 @router.get("/{library_id}", response_model=LibraryRead)

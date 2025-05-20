@@ -6,10 +6,10 @@ This document explains the vector indexing algorithms implemented in this projec
 
 We've implemented two vector indexing algorithms for efficient similarity search:
 
-1. **BruteForceCosine** - A simple exhaustive search implementation
+1. **LinearSearchCosine** - A simple exhaustive search implementation
 2. **BallTreeCosine** - A space-partitioning data structure (median-split KD-tree variant)
 
-## BruteForceCosine
+## LinearSearchCosine
 
 ### Algorithm Description
 
@@ -91,26 +91,26 @@ Below are sample benchmark results comparing both algorithms across different di
 
 | Index | Dimensions | Build Time (s) | Query Time (s) |
 |-------|------------|----------------|----------------|
-| BruteForceCosine | 10 | 0.0021 | 0.0015 |
+| LinearSearchCosine | 10 | 0.0021 | 0.0015 |
 | BallTreeCosine | 10 | 0.0312 | 0.0003 |
-| BruteForceCosine | 50 | 0.0035 | 0.0018 |
+| LinearSearchCosine | 50 | 0.0035 | 0.0018 |
 | BallTreeCosine | 50 | 0.0426 | 0.0008 |
-| BruteForceCosine | 100 | 0.0046 | 0.0022 |
+| LinearSearchCosine | 100 | 0.0046 | 0.0022 |
 | BallTreeCosine | 100 | 0.0587 | 0.0012 |
-| BruteForceCosine | 300 | 0.0089 | 0.0042 |
+| LinearSearchCosine | 300 | 0.0089 | 0.0042 |
 | BallTreeCosine | 300 | 0.0921 | 0.0031 |
-| BruteForceCosine | 768 | 0.0183 | 0.0097 |
+| LinearSearchCosine | 768 | 0.0183 | 0.0097 |
 | BallTreeCosine | 768 | 0.1573 | 0.0082 |
 
 As shown in the benchmark results:
 - BallTreeCosine has higher build times but significantly faster query times in lower dimensions
 - As dimensions increase, the query time advantage of BallTreeCosine diminishes
-- For very high dimensions (768), BallTreeCosine still outperforms BruteForceCosine but by a smaller margin
+- For very high dimensions (768), BallTreeCosine still outperforms LinearSearchCosine but by a smaller margin
 
 You can run your own benchmarks using the `scripts/benchmark.py` script.
 
 ## Recommendations
 
-- For small datasets (<10K vectors) or high dimensions (>300), BruteForceCosine is often sufficient
+- For small datasets (<10K vectors) or high dimensions (>300), LinearSearchCosine is often sufficient
 - For medium datasets (10K-1M vectors) with low to medium dimensions (<100), BallTreeCosine provides better query performance
 - For production systems with very large datasets, consider using approximate nearest neighbor algorithms like HNSW, FAISS, or Annoy (not implemented in this project)

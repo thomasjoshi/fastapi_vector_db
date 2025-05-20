@@ -14,6 +14,9 @@ from app.services.exceptions import ValidationError
 
 T = TypeVar("T")
 
+# Global indices dictionary to maintain state across requests
+_indices: Dict[UUID, Any] = {}
+_indices_lock = threading.RLock()  # Global lock for thread safety
 
 class SearchService(Generic[T]):
     """
@@ -35,8 +38,18 @@ class SearchService(Generic[T]):
         """
         self._repo = repo
         self._index_class = index_class
-        self._indices: Dict[UUID, Any] = {}
-        self._lock = threading.RLock()  # Reentrant lock for thread safety
+        # Use the global _indices dictionary and lock for persistence between requests
+        # self._indices: Dict[UUID, Any] = {}  # No longer needed as instance variable
+        # self._lock = threading.RLock()  # No longer needed as instance variable
+        
+        # Create a no-op observer function that doesn't call any metric system
+        # This completely bypasses the metrics functionality which isn't required
+        # for our core vector search functionality
+        def no_op_observer(op: str, time_ms: float) -> None:
+            # Do nothing - we're not using metrics in this implementation
+            pass
+            
+        self._observer_adapter = no_op_observer
 
     async def index_library(self, library_id: UUID) -> int:
         """
@@ -56,18 +69,18 @@ class SearchService(Generic[T]):
         start_time = time.time()
 
         try:
-            with self._lock:
+            with _indices_lock:
                 # Verify library exists
                 library = await self._repo.get_library(library_id)
                 
                 logger.info(f"Starting indexing for library {library_id}")
 
-                # Get all chunks in the library
-                chunks: List[Chunk] = []
-                # Extract documents from the library
+                # Find all documents in the library
                 documents = library.documents
-                logger.debug(f"Found {len(documents)} documents in library {library_id}")
-
+                logger.info(f"Found {len(documents)} documents in library {library_id}")
+                
+                # Extract all chunks from documents
+                chunks = []
                 for document in documents:
                     # Extract chunks from the document
                     chunks.extend(document.chunks)
@@ -77,7 +90,7 @@ class SearchService(Generic[T]):
                 if not chunks:
                     # Create empty index if no chunks
                     logger.warning(f"No chunks found in library {library_id}, creating empty index")
-                    self._indices[library_id] = self._index_class[UUID](dim=0)
+                    _indices[library_id] = self._index_class(dim=0, observer=self._observer_adapter)
                     return 0
 
                 # Verify all chunks have valid embeddings
@@ -89,38 +102,37 @@ class SearchService(Generic[T]):
                         f"Found {len(invalid_chunks)} chunks with empty embeddings. First few: {', '.join(chunk_ids)}"
                     )
 
-                # Determine dimension from first chunk
-                dim = len(chunks[0].embedding)
-                logger.debug(f"Embedding dimension: {dim}")
-
-                # Create index
-                index = self._index_class[UUID](dim=dim)
-
-                # Add all chunks to index
+                # Get the dimension of embeddings
+                dims = set(len(chunk.embedding) for chunk in chunks)
+                
+                if len(dims) > 1:
+                    logger.error(f"Inconsistent embedding dimensions in library: {dims}")
+                    raise ValidationError(f"Inconsistent embedding dimensions: {dims}")
+                
+                dim = dims.pop()
+                logger.info(f"Creating index with dimension {dim}")
+                
+                # Build embeddings list
                 embeddings = []
                 ids = []
-
-                # Validate embedding dimensions
-                for i, chunk in enumerate(chunks):
-                    try:
-                        if len(chunk.embedding) != dim:
-                            raise ValidationError(
-                                f"Chunk {chunk.id} has embedding dimension {len(chunk.embedding)}, expected {dim}"
-                            )
-                        embeddings.append(chunk.embedding)
-                        ids.append(chunk.id)
-                    except Exception as e:
-                        logger.error(f"Error processing chunk {i} (ID: {chunk.id}): {str(e)}")
-                        raise ValidationError(f"Error processing chunk {chunk.id}: {str(e)}")
-
-                # Build the index
-                logger.info(f"Building index with {len(embeddings)} embeddings")
+                for chunk in chunks:
+                    embeddings.append(chunk.embedding)
+                    ids.append(chunk.id)
+                
+                # Create index with proper dimension
                 try:
-                    index.build(embeddings, ids)
-                    self._indices[library_id] = index
+                    logger.info(f"Creating index of type {self._index_class.__name__} with dimension {dim}")
+                    index = self._index_class(dim=dim, observer=self._observer_adapter)
+                    
+                    # Build the index
+                    logger.info(f"Building index with {len(embeddings)} embeddings")
+                    index.build(embeddings=embeddings, ids=ids)
+                    _indices[library_id] = index
+                    logger.info(f"Successfully built index with {len(embeddings)} embeddings")
                 except Exception as e:
-                    logger.error(f"Failed to build index: {str(e)}")
-                    raise ValidationError(f"Failed to build index: {str(e)}")
+                    logger.error(f"Failed to create/build index: {str(e)}")
+                    logger.exception("Exception details:")
+                    raise ValidationError(f"Failed to create/build index: {str(e)}")
 
                 end_time = time.time()
                 logger.info(f"Indexed {len(chunks)} chunks in {end_time - start_time:.2f}s")
@@ -174,15 +186,15 @@ class SearchService(Generic[T]):
         """
         start_time = time.time()
 
-        with self._lock:
+        with _indices_lock:
             # Verify library exists
             library = await self._repo.get_library(library_id)
 
             # Check if library is indexed
-            if library_id not in self._indices:
+            if library_id not in _indices:
                 raise ValidationError(f"Library {library_id} is not indexed")
 
-            index = self._indices[library_id]
+            index = _indices[library_id]
 
             # Check embedding dimension
             if index.size() > 0 and len(embedding) != index._dim:
@@ -241,10 +253,10 @@ class SearchService(Generic[T]):
         Raises:
             NotFoundError: If the library does not exist
         """
-        with self._lock:
+        with _indices_lock:
             # Remove existing index if it exists
-            if library_id in self._indices:
-                del self._indices[library_id]
+            if library_id in _indices:
+                del _indices[library_id]
 
             # Index the library
             return await self.index_library(library_id)

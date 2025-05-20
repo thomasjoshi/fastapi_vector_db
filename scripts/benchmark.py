@@ -18,7 +18,7 @@ import numpy as np
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.indexing.ball_tree import BallTreeCosine
-from app.indexing.brute import BruteForceCosine
+from app.indexing.linear_search import LinearSearchCosine
 
 
 def generate_random_vectors(
@@ -89,10 +89,10 @@ def run_benchmarks() -> None:
         vectors = generate_random_vectors(vector_count, dimensions)
         query_vectors = generate_random_vectors(query_count, dimensions, seed=43)
         
-        # Benchmark BruteForceCosine
+        # Benchmark LinearSearchCosine
         brute_results = benchmark_index(
-            f"BruteForceCosine ({dimensions}D)",
-            BruteForceCosine,
+            f"LinearSearchCosine ({dimensions}D)",
+            LinearSearchCosine,
             vectors,
             query_vectors,
             k,

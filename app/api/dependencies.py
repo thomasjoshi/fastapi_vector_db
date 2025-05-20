@@ -85,4 +85,5 @@ def get_search_service(repo: InMemoryRepo = Depends(get_repo)) -> SearchService:
     Returns:
         An instance of SearchService
     """
-    return SearchService(repo, _metrics_callback)
+    # SearchService doesn't use metrics callback, it needs a vector index observer with a different signature
+    return SearchService(repo)

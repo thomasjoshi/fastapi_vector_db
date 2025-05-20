@@ -92,7 +92,7 @@ class TestBallTreeCosine:
         assert top_idx >= 5, f"Expected a vector with positive y value, got {top_id}"
 
     def test_search_correctness(self):
-        """Test search correctness against BruteForceCosine."""
+        """Test search correctness against LinearSearchCosine."""
         # Create random vectors
         np.random.seed(42)
         dim = 10
