@@ -16,7 +16,7 @@ A high-performance vector database implementation for semantic similarity search
 
 ## Architecture
 
-This project implements a hexagonal architecture pattern with domain-driven design principles, creating a maintainable and testable codebase:
+This project implements a architecture pattern with domain-driven design principles, creating a maintainable and testable codebase:
 
 ```
 app/
