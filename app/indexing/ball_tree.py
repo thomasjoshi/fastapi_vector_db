@@ -6,8 +6,6 @@ Implements thread-safety, dimensionality enforcement, and memory optimization.
 """
 
 import heapq
-import io
-import pickle
 import threading
 import time
 from typing import (
@@ -523,66 +521,3 @@ class BallTreeCosine(Generic[T]):
         """Return the number of vectors in the index."""
         with self._lock:
             return len(self._ids)
-
-    def to_bytes(self) -> bytes:
-        """
-        Serialize the index to bytes.
-
-        Returns:
-            Serialized index as bytes
-        """
-        with self._lock:
-            # Create a BytesIO object to write the data
-            buffer = io.BytesIO()
-
-            # Save the matrix
-            np.save(buffer, self._matrix)
-
-            # Save the dimension and leaf size
-            np.save(buffer, np.array([self._dim, self._leaf_size], dtype=np.int32))
-
-            # Save the IDs and ID-to-index mapping
-            pickle.dump((self._ids, self._id_to_idx), buffer)
-
-            # Get the bytes
-            buffer.seek(0)
-            return buffer.getvalue()
-
-    @classmethod
-    def from_bytes(
-        cls, data: bytes, observer: Optional[Callable[[str, float], None]] = None
-    ) -> "BallTreeCosine[T]":
-        """
-        Deserialize an index from bytes.
-
-        Args:
-            data: Serialized index data
-            observer: Optional callback for performance metrics
-
-        Returns:
-            Deserialized BallTreeCosine index
-        """
-        buffer = io.BytesIO(data)
-
-        # Load the matrix
-        matrix = np.load(buffer)
-
-        # Load the dimension and leaf size
-        params = np.load(buffer)
-        dim, leaf_size = int(params[0]), int(params[1])
-
-        # Load the IDs and ID-to-index mapping
-        ids, id_to_idx = pickle.load(buffer)
-
-        # Create a new index
-        index = cls(dim, leaf_size, observer)
-
-        # Set the data
-        index._matrix = matrix
-        index._ids = ids
-        index._id_to_idx = id_to_idx
-
-        # Build the tree
-        index._build_tree()
-
-        return index

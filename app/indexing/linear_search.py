@@ -2,8 +2,6 @@
 Brute force cosine similarity search implementation.
 """
 
-import io
-import pickle
 import threading
 import time
 from typing import (
@@ -232,60 +230,4 @@ class LinearSearchCosine(Generic[T]):
         with self._lock:
             return len(self._ids)
 
-    def to_bytes(self) -> bytes:
-        """
-        Serialize the index to bytes.
-
-        Returns:
-            Serialized index as bytes
-        """
-        with self._lock:
-            # Create a BytesIO object to write the data
-            buffer = io.BytesIO()
-
-            # Save the matrix
-            np.save(buffer, self._matrix)
-
-            # Save the dimension
-            np.save(buffer, np.array([self._dim], dtype=np.int32))
-
-            # Save the IDs
-            pickle.dump(self._ids, buffer)
-
-            # Get the bytes
-            buffer.seek(0)
-            return buffer.getvalue()
-
-    @classmethod
-    def from_bytes(
-        cls, data: bytes, observer: Optional[Callable[[str, float], None]] = None
-    ) -> "LinearSearchCosine[T]":
-        """
-        Deserialize an index from bytes.
-
-        Args:
-            data: Serialized index as bytes
-            observer: Optional callback for performance metrics
-
-        Returns:
-            Deserialized LinearSearchCosine index
-        """
-        buffer = io.BytesIO(data)
-
-        # Load the matrix
-        matrix = np.load(buffer)
-
-        # Load the dimension
-        dim = int(np.load(buffer)[0])
-
-        # Load the IDs
-        ids = pickle.load(buffer)
-
-        # Create a new index
-        index = cls(dim, observer)
-
-        # Set the data
-        index._matrix = matrix
-        index._ids = ids
-
-        return index
+    # Removed serialization methods that were only used in tests

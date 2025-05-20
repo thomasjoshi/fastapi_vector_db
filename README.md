@@ -161,16 +161,14 @@ python scripts/benchmark.py
 
 ```bash
 # Clone and install
-git clone https://github.com/yourusername/fastapi_vector_db.git
+git clone https://github.com/thomasjoshi/fastapi_vector_db.git
 cd fastapi_vector_db
 poetry install
-poetry shell
+poetry env activate
 
 # Run server
 uvicorn app.main:app --reload
 ```
-
-API docs at http://localhost:8000/docs
 
 ## Key Design Patterns & Engineering Decisions
 
