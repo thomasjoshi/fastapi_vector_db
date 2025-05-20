@@ -27,8 +27,9 @@ def test_create_library() -> None:
 
     # Check response
     assert response.status_code == status.HTTP_201_CREATED
-    library_id = response.json()
-    assert library_id is not None
+    library_data = response.json()
+    assert library_data is not None
+    library_id = library_data["id"]
 
     # Check Location header
     assert "Location" in response.headers
@@ -42,7 +43,7 @@ def test_get_library() -> None:
     # Use model_dump to properly serialize the model
     lib_data = {"documents": lib.model_dump()["documents"], "metadata": lib.metadata}
     response = client.post("/libraries/", json=lib_data)
-    library_id = response.json()
+    library_id = response.json()["id"]
 
     # Get the library
     response = client.get(f"/libraries/{library_id}")
@@ -66,7 +67,7 @@ def test_update_library() -> None:
     # Use model_dump to properly serialize the model
     lib_data = {"documents": lib.model_dump()["documents"], "metadata": lib.metadata}
     response = client.post("/libraries/", json=lib_data)
-    library_id = response.json()
+    library_id = response.json()["id"]
 
     # Update the library with full data
     updated_data = {
@@ -91,7 +92,7 @@ def test_update_library_with_partial_data() -> None:
     # Use model_dump to properly serialize the model
     lib_data = {"documents": lib.model_dump()["documents"], "metadata": lib.metadata}
     response = client.post("/libraries/", json=lib_data)
-    library_id = response.json()
+    library_id = response.json()["id"]
 
     # Update only the metadata
     update_data = {"metadata": {"name": "Updated via API", "created_by": "Test"}}
@@ -115,7 +116,7 @@ def test_delete_library() -> None:
     # Use model_dump to properly serialize the model
     lib_data = {"documents": lib.model_dump()["documents"], "metadata": lib.metadata}
     response = client.post("/libraries/", json=lib_data)
-    library_id = response.json()
+    library_id = response.json()["id"]
 
     # Delete the library
     response = client.delete(f"/libraries/{library_id}")

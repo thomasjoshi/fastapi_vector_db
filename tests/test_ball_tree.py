@@ -163,110 +163,46 @@ class TestBallTreeCosine:
     def test_thread_safety(self):
         """Test thread safety."""
         index = BallTreeCosine[int](dim=3)
-
-        # Number of threads and operations
-        n_threads = 10
-        n_ops = 50
-
-        # Shared state for tracking errors
+        n_threads, n_ops = 10, 50
         errors = []
 
         def worker(thread_id):
             try:
                 for i in range(n_ops):
-                    # Add a vector
                     vec_id = thread_id * n_ops + i
                     vector = [float(thread_id), float(i), 0.0]
                     index.add(vec_id, vector)
-
-                    # Build after every 10 adds
+                    
                     if i % 10 == 0:
                         index.build([], [])
-
-                        # Query the index
                         try:
                             index.query([float(thread_id), float(i), 0.0], k=5)
                         except RuntimeError:
-                            # It's ok if the index is dirty
-                            pass
+                            pass  # Dirty index is expected sometimes
             except Exception as e:
                 errors.append(e)
 
-        # Create and start threads
-        threads = []
-        for i in range(n_threads):
-            t = threading.Thread(target=worker, args=(i,))
-            threads.append(t)
-            t.start()
+        threads = [threading.Thread(target=worker, args=(i,)) for i in range(n_threads)]
+        [t.start() for t in threads]
+        [t.join() for t in threads]
 
-        # Wait for all threads to finish
-        for t in threads:
-            t.join()
-
-        # Check for errors
         assert not errors, f"Errors occurred during concurrent execution: {errors}"
-
-        # Final build and verify the index size
         index.build([], [])
         assert index.size() == n_threads * n_ops
 
-    def test_serialization(self):
-        """Test serialization and deserialization."""
-        # Create test vectors
-        vectors = [
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-        ]
-        ids = ["x", "y", "z"]
 
-        # Create and populate index
-        index = BallTreeCosine[str](dim=3)
-        index.build(vectors, ids)
-
-        # Serialize
-        data = index.to_bytes()
-
-        # Deserialize
-        loaded_index = BallTreeCosine.from_bytes(data)
-
-        # Verify dimensions
-        assert loaded_index.size() == 3
-
-        # Verify query results
-        original_results = index.query([1.0, 0.0, 0.0])
-        loaded_results = loaded_index.query([1.0, 0.0, 0.0])
-
-        assert len(original_results) == len(loaded_results)
-        for (id1, sim1), (id2, sim2) in zip(original_results, loaded_results):
-            assert id1 == id2
-            assert abs(sim1 - sim2) < 1e-6
 
     def test_metrics_callback(self):
         """Test metrics callback."""
-        # Create a callback to collect metrics
         metrics = {}
-
         def observer(op: str, duration_ms: float) -> None:
-            if op not in metrics:
-                metrics[op] = []
-            metrics[op].append(duration_ms)
+            metrics.setdefault(op, []).append(duration_ms)
 
-        # Create index with observer
         index = BallTreeCosine[str](dim=3, observer=observer)
-
-        # Perform operations
         index.add("vec1", [1.0, 0.0, 0.0])
         index.build([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], ["vec2", "vec3"])
         index.query([1.0, 0.0, 0.0])
         index.remove("vec1")
 
-        # Verify metrics were collected
-        assert "add" in metrics
-        assert "build" in metrics
-        assert "query" in metrics
-        assert "remove" in metrics
-        assert len(metrics["add"]) == 1
-        assert len(metrics["build"]) == 1
-        assert len(metrics["query"]) == 1
-        assert len(metrics["remove"]) == 1
+        for op in ["add", "build", "query", "remove"]:
+            assert op in metrics and len(metrics[op]) == 1

@@ -229,5 +229,3 @@ class LinearSearchCosine(Generic[T]):
         """Return the number of vectors in the index."""
         with self._lock:
             return len(self._ids)
-
-    # Removed serialization methods that were only used in tests

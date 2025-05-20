@@ -93,143 +93,73 @@ class TestLinearSearchCosine:
         assert len(results) == 2
         assert results[0][0] == "x"
 
-    def test_persistence(self):
-        """Test serialization and deserialization."""
-        # Create test vectors
-        vectors = [
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-        ]
-        ids = ["x", "y", "z"]
 
-        # Create and populate index
-        index = LinearSearchCosine[str](dim=3)
-        index.build(vectors, ids)
-
-        # Serialize
-        data = index.to_bytes()
-
-        # Deserialize
-        loaded_index = LinearSearchCosine.from_bytes(data)
-
-        # Verify dimensions
-        assert loaded_index._dim == 3
-        assert loaded_index.size() == 3
-
-        # Verify query results
-        original_results = index.query([1.0, 0.0, 0.0])
-        loaded_results = loaded_index.query([1.0, 0.0, 0.0])
-
-        assert len(original_results) == len(loaded_results)
-        for (id1, sim1), (id2, sim2) in zip(original_results, loaded_results):
-            assert id1 == id2
-            assert abs(sim1 - sim2) < 1e-6
 
     def test_thread_safety(self):
         """Test thread safety."""
         index = LinearSearchCosine[int](dim=3)
-
-        # Number of threads and operations
-        n_threads = 10
-        n_ops = 100
-
-        # Shared state for tracking errors
+        n_threads, n_ops = 10, 100
         errors = []
 
         def worker(thread_id):
             try:
                 for i in range(n_ops):
-                    # Add a vector
                     vec_id = thread_id * n_ops + i
                     vector = [float(thread_id), float(i), 0.0]
                     index.add(vec_id, vector)
-
-                    # Query the index
                     index.query([float(thread_id), float(i), 0.0], k=5)
             except Exception as e:
                 errors.append(e)
 
-        # Create and start threads
-        threads = []
-        for i in range(n_threads):
-            t = threading.Thread(target=worker, args=(i,))
-            threads.append(t)
-            t.start()
+        threads = [threading.Thread(target=worker, args=(i,)) for i in range(n_threads)]
+        [t.start() for t in threads]
+        [t.join() for t in threads]
 
-        # Wait for all threads to finish
-        for t in threads:
-            t.join()
-
-        # Check for errors
         assert not errors, f"Errors occurred during concurrent execution: {errors}"
-
-        # Verify the index size
         assert index.size() == n_threads * n_ops
 
     def test_metrics_callback(self):
         """Test metrics callback."""
-        # Create a callback to collect metrics
         metrics = {}
-
         def observer(op: str, duration_ms: float) -> None:
-            if op not in metrics:
-                metrics[op] = []
-            metrics[op].append(duration_ms)
+            metrics.setdefault(op, []).append(duration_ms)
 
-        # Create index with observer
         index = LinearSearchCosine[str](dim=3, observer=observer)
-
-        # Perform operations
         index.add("vec1", [1.0, 0.0, 0.0])
         index.build([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], ["vec2", "vec3"])
         index.query([1.0, 0.0, 0.0])
 
-        # Verify metrics were collected
-        assert "add" in metrics
-        assert "build" in metrics
-        assert "query" in metrics
-        assert len(metrics["add"]) == 1
-        assert len(metrics["build"]) == 1
-        assert len(metrics["query"]) == 1
+        for op in ["add", "build", "query"]:
+            assert op in metrics and len(metrics[op]) == 1
 
     def test_bulk_build_optimization(self):
         """Test bulk build optimization."""
-        # Create a large number of vectors
-        n_vectors = 1000
-        dim = 10
-
-        # Generate random vectors
+        n_vectors, dim = 1000, 10
         np.random.seed(42)
         vectors = np.random.randn(n_vectors, dim).tolist()
         ids = [f"vec{i}" for i in range(n_vectors)]
 
-        # Measure time for individual adds
+        # Time individual adds
         start_time = time.time()
         index1 = LinearSearchCosine[str](dim=dim)
         for id_val, vector in zip(ids, vectors):
             index1.add(id_val, vector)
         individual_time = time.time() - start_time
 
-        # Measure time for bulk build
+        # Time bulk build
         start_time = time.time()
         index2 = LinearSearchCosine[str](dim=dim)
         index2.build(vectors, ids)
         bulk_time = time.time() - start_time
 
-        # Verify bulk build is faster
+        # Verify performance and correctness
         assert bulk_time < individual_time
-
-        # Verify both indices have the same content
         assert index1.size() == index2.size()
-
-        # Query both indices and verify similar results
+        
+        # Check similarity in results
         query = np.random.randn(dim).tolist()
         results1 = index1.query(query, k=10)
         results2 = index2.query(query, k=10)
-
-        # Check that the top results are similar
-        # They might not be identical due to floating point differences
         top_ids1 = set(id_val for id_val, _ in results1[:5])
         top_ids2 = set(id_val for id_val, _ in results2[:5])
-        assert len(top_ids1.intersection(top_ids2)) >= 3  # At least 3 in common
+        assert len(top_ids1.intersection(top_ids2)) >= 3

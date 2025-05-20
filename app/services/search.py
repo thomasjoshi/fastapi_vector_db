@@ -38,18 +38,6 @@ class SearchService(Generic[T]):
         """
         self._repo = repo
         self._index_class = index_class
-        # Use the global _indices dictionary and lock for persistence between requests
-        # self._indices: Dict[UUID, Any] = {}  # No longer needed as instance variable
-        # self._lock = threading.RLock()  # No longer needed as instance variable
-        
-        # Create a no-op observer function that doesn't call any metric system
-        # This completely bypasses the metrics functionality which isn't required
-        # for our core vector search functionality
-        def no_op_observer(op: str, time_ms: float) -> None:
-            # Do nothing - we're not using metrics in this implementation
-            pass
-            
-        self._observer_adapter = no_op_observer
 
     async def index_library(self, library_id: UUID) -> int:
         """
@@ -90,7 +78,7 @@ class SearchService(Generic[T]):
                 if not chunks:
                     # Create empty index if no chunks
                     logger.warning(f"No chunks found in library {library_id}, creating empty index")
-                    _indices[library_id] = self._index_class(dim=0, observer=self._observer_adapter)
+                    _indices[library_id] = self._index_class(dim=0)
                     return 0
 
                 # Verify all chunks have valid embeddings
@@ -122,7 +110,7 @@ class SearchService(Generic[T]):
                 # Create index with proper dimension
                 try:
                     logger.info(f"Creating index of type {self._index_class.__name__} with dimension {dim}")
-                    index = self._index_class(dim=dim, observer=self._observer_adapter)
+                    index = self._index_class(dim=dim)
                     
                     # Build the index
                     logger.info(f"Building index with {len(embeddings)} embeddings")
