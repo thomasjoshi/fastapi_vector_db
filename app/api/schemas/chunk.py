@@ -35,6 +35,7 @@ class SearchQuery(BaseModel):
 
     embedding: List[float]
     k: int = Field(default=5, ge=1, le=100)
+    metadata_filters: Dict[str, str] = Field(default_factory=dict, description="Metadata filters to apply to search results")
 
 
 class SearchHit(BaseModel):

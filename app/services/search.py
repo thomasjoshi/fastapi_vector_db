@@ -122,7 +122,8 @@ class SearchService(Generic[T]):
         return [chunk for chunk, _ in results]
 
     async def search(
-        self, library_id: UUID, embedding: List[float], k: int = 5
+        self, library_id: UUID, embedding: List[float], k: int = 5, 
+        metadata_filters: Dict[str, str] = None
     ) -> List[Tuple[Chunk, float]]:
         """
         Search for similar chunks in a library.
@@ -131,6 +132,7 @@ class SearchService(Generic[T]):
             library_id: ID of the library to search in
             embedding: Query vector
             k: Number of results to return
+            metadata_filters: Optional dictionary of metadata key-value pairs to filter results
 
         Returns:
             List of (chunk, score) tuples, sorted by score in descending order
@@ -162,19 +164,33 @@ class SearchService(Generic[T]):
 
             # Fetch chunks
             hits = []
+            # Dictionary for quick chunk lookup
+            chunk_map = {}
+            for doc in library.documents:
+                for c in doc.chunks:
+                    chunk_map[c.id] = c
+            
             for chunk_id, score in results:
-                # Retrieve the chunk from documents in the library
-                chunk = None
-                for doc in library.documents:
-                    for c in doc.chunks:
-                        if c.id == chunk_id:
-                            chunk = c
-                            break
-                    if chunk:
-                        break
-
+                # Retrieve the chunk from the map
+                chunk = chunk_map.get(chunk_id)
+                
                 if chunk:  # Skip if chunk was deleted
-                    hits.append((chunk, score))
+                    # Apply metadata filters if provided
+                    if metadata_filters:
+                        # Check if chunk metadata matches all filter criteria
+                        matches = True
+                        for key, value in metadata_filters.items():
+                            # Skip chunks that don't match any filter criteria
+                            if key not in chunk.metadata or chunk.metadata[key] != value:
+                                matches = False
+                                break
+                        
+                        # Only add chunk if it matches all filters
+                        if matches:
+                            hits.append((chunk, score))
+                    else:
+                        # No filters, add all chunks
+                        hits.append((chunk, score))
 
             end_time = time.time()
             print(f"Search completed in {end_time - start_time:.4f}s")

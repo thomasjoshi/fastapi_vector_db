@@ -59,7 +59,12 @@ async def search_library(
     Returns a list of chunks sorted by similarity to the query vector.
     """
     try:
-        results = await service.search(library_id, query.embedding, query.k)
+        results = await service.search(
+            library_id, 
+            query.embedding, 
+            query.k,
+            query.metadata_filters if query.metadata_filters else None
+        )
 
         # Convert to SearchResponse schema
         hits = []
