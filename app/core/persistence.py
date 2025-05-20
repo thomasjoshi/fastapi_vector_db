@@ -10,7 +10,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from loguru import logger
@@ -105,7 +105,7 @@ class Persistence:
                 logger.info(f"No persistence file found at {self.persistence_path}")
                 return {}
 
-            with open(path, "r") as f:
+            with open(path) as f:
                 data = json.load(f)
 
             # Convert the loaded data back to Library objects

@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     ENABLE_PERSISTENCE: bool = False
     PERSISTENCE_PATH: str = "./data/vector_db.json"
     PERSISTENCE_INTERVAL: int = 300  # Save every 5 minutes
+    
+    # Cohere API settings
+    COHERE_API_KEY: str = "A1Fi5KBBNoekwBPIa833CBScs6Z2mHEtOXxr52KO"  # Default key from test instructions
+    COHERE_EMBEDDING_MODEL: str = "embed-english-v3.0"  # Default embedding model
 
     model_config = {"env_prefix": "APP_"}
 
