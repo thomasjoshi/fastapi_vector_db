@@ -16,7 +16,7 @@ A high-performance vector database implementation for semantic similarity search
 
 ## Architecture
 
-This project implements a architecture pattern with domain-driven design principles, creating a maintainable and testable codebase:
+This project implements an architecture pattern with domain-driven design principles, creating a maintainable and testable codebase:
 
 ```
 app/
@@ -182,9 +182,9 @@ API docs at http://localhost:8000/docs
 
 - **Dependency Injection**: Services and repositories are injected at runtime, enabling easier unit testing and maintaining the Dependency Inversion Principle
 
-- **Domain-Specific Exceptions**: Implemented a rich exception hierarchy for precise error handling, with appropriate HTTP status code mapping at the API layer
+- **Custom Exceptions**: Implemented basic error types like NotFoundError and ValidationError with appropriate HTTP status code mapping at the API layer
 
-- **Observer Pattern**: Added metrics callbacks to critical operations, enabling performance monitoring without tightly coupling to any specific monitoring system
+- **Performance Callbacks**: Added simple timing callbacks to index operations, allowing basic performance monitoring
 
 ## Advanced Implementation Features
 
@@ -193,11 +193,10 @@ API docs at http://localhost:8000/docs
 - **Configurable Checkpointing**: Auto-save intervals and file paths configurable through environment variables
 - **Efficient Serialization**: Custom to/from_bytes methods that maintain the full structure of indices, including tree topologies
 
-### Two-Phase Metadata Filtering
-- **Post-Retrieval Filtering**: Optimized two-phase search that first performs vector similarity, then applies metadata constraints
-- **Exact Matching**: Support for key-value equality filtering on any metadata field
-- **Hierarchical Filtering**: Filters can be applied at library, document, or chunk level metadata
-- **Zero Performance Penalty**: Filtering occurs after vector similarity computation, avoiding dimensionality increase
+### Metadata Filtering
+- **Post-Retrieval Filtering**: Simple two-phase approach that performs vector similarity search first, then filters results by metadata
+- **Key-Value Matching**: Support for exact matching on chunk metadata fields
+- **Efficient Design**: Filtering happens after vector search to maintain query performance
 
 ## Cohere API Integration
 
