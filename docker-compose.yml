@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  vector-db-api:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_LOG_LEVEL=INFO
+      - APP_ENABLE_PERSISTENCE=true
+      - APP_PERSISTENCE_PATH=/app/data/vector_db.json
+      - APP_PERSISTENCE_INTERVAL=300
+    volumes:
+      - ./data:/app/data

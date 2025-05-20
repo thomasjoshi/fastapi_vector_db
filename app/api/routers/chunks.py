@@ -5,10 +5,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
+from app.api.dependencies import get_chunk_service
 from app.api.schemas.chunk import ChunkCreate, ChunkRead
 from app.domain.models import Chunk
 from app.services.chunk import ChunkService
-from app.api.dependencies import get_chunk_service
 
 router = APIRouter(tags=["chunks"])
 

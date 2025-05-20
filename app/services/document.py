@@ -3,7 +3,7 @@ Service for managing documents.
 This is a stub implementation that will be expanded in future increments.
 """
 import time
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 
 from app.domain.models import Document
@@ -49,19 +49,25 @@ class DocumentService:
             NotFoundError: If the library does not exist
         """
         start_time = time.time()
-        
+
         try:
             # Verify library exists by trying to get it
             library = await self._repo.get_library(library_id)
-            
+
             # Get documents from the library
             documents = library.documents
-            
-            self._metrics("list_documents", duration_ms=(time.time() - start_time) * 1000)
+
+            self._metrics(
+                "list_documents", duration_ms=(time.time() - start_time) * 1000
+            )
             return documents
         except Exception as e:
-            self._metrics("list_documents_error", duration_ms=(time.time() - start_time) * 1000)
-            raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id) from e
+            self._metrics(
+                "list_documents_error", duration_ms=(time.time() - start_time) * 1000
+            )
+            raise NotFoundError(
+                f"Library with ID {library_id} not found", "Library", library_id
+            ) from e
 
     async def add_document(self, library_id: UUID, document: Document) -> Document:
         """
@@ -78,16 +84,20 @@ class DocumentService:
             NotFoundError: If the library does not exist
         """
         start_time = time.time()
-        
+
         try:
             # Add document to the library
             result = await self._repo.add_document(library_id, document)
-            
+
             self._metrics("add_document", duration_ms=(time.time() - start_time) * 1000)
             return document
         except Exception as e:
-            self._metrics("add_document_error", duration_ms=(time.time() - start_time) * 1000)
-            raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id) from e
+            self._metrics(
+                "add_document_error", duration_ms=(time.time() - start_time) * 1000
+            )
+            raise NotFoundError(
+                f"Library with ID {library_id} not found", "Library", library_id
+            ) from e
 
     async def get_document(self, library_id: UUID, document_id: UUID) -> Document:
         """
@@ -104,16 +114,22 @@ class DocumentService:
             NotFoundError: If the library or document does not exist
         """
         start_time = time.time()
-        
+
         try:
             # Get document from the library
             document = await self._repo.get_document(library_id, document_id)
-            
+
             self._metrics("get_document", duration_ms=(time.time() - start_time) * 1000)
             return document
         except Exception as e:
-            self._metrics("get_document_error", duration_ms=(time.time() - start_time) * 1000)
-            raise NotFoundError(f"Document with ID {document_id} not found in library {library_id}", "Document", document_id) from e
+            self._metrics(
+                "get_document_error", duration_ms=(time.time() - start_time) * 1000
+            )
+            raise NotFoundError(
+                f"Document with ID {document_id} not found in library {library_id}",
+                "Document",
+                document_id,
+            ) from e
 
     async def update_document(
         self, library_id: UUID, document_id: UUID, updated: Document
@@ -133,19 +149,27 @@ class DocumentService:
             NotFoundError: If the library or document does not exist
         """
         start_time = time.time()
-        
+
         try:
             # Update document in the repository
             await self._repo.update_document(library_id, document_id, updated)
-            
+
             # Get the updated document
             document = await self._repo.get_document(library_id, document_id)
-            
-            self._metrics("update_document", duration_ms=(time.time() - start_time) * 1000)
+
+            self._metrics(
+                "update_document", duration_ms=(time.time() - start_time) * 1000
+            )
             return document
         except Exception as e:
-            self._metrics("update_document_error", duration_ms=(time.time() - start_time) * 1000)
-            raise NotFoundError(f"Document with ID {document_id} not found in library {library_id}", "Document", document_id) from e
+            self._metrics(
+                "update_document_error", duration_ms=(time.time() - start_time) * 1000
+            )
+            raise NotFoundError(
+                f"Document with ID {document_id} not found in library {library_id}",
+                "Document",
+                document_id,
+            ) from e
 
     async def delete_document(self, library_id: UUID, document_id: UUID) -> None:
         """
@@ -159,12 +183,20 @@ class DocumentService:
             NotFoundError: If the library or document does not exist
         """
         start_time = time.time()
-        
+
         try:
             # Delete document from the repository
             await self._repo.delete_document(library_id, document_id)
-            
-            self._metrics("delete_document", duration_ms=(time.time() - start_time) * 1000)
+
+            self._metrics(
+                "delete_document", duration_ms=(time.time() - start_time) * 1000
+            )
         except Exception as e:
-            self._metrics("delete_document_error", duration_ms=(time.time() - start_time) * 1000)
-            raise NotFoundError(f"Document with ID {document_id} not found in library {library_id}", "Document", document_id) from e
+            self._metrics(
+                "delete_document_error", duration_ms=(time.time() - start_time) * 1000
+            )
+            raise NotFoundError(
+                f"Document with ID {document_id} not found in library {library_id}",
+                "Document",
+                document_id,
+            ) from e

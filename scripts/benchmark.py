@@ -6,20 +6,19 @@ This script compares the performance of different vector search implementations
 in terms of build time, query time, and memory usage.
 """
 
-import time
-import random
-import numpy as np
-from typing import List, Dict, Any, Tuple
-import matplotlib.pyplot as plt
-from uuid import UUID, uuid4
-import sys
 import os
+import sys
+import time
+from typing import Any, Dict, List
+from uuid import uuid4
+
+import numpy as np
 
 # Add the parent directory to the path so we can import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.indexing.brute import BruteForceCosine
 from app.indexing.ball_tree import BallTreeCosine
+from app.indexing.brute import BruteForceCosine
 
 
 def generate_random_vectors(

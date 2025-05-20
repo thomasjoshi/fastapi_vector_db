@@ -1,8 +1,6 @@
-import concurrent.futures
 from uuid import UUID
 
 import pytest
-import pytest_asyncio
 
 from app.domain.models import Library
 from app.repos.in_memory import InMemoryRepo
@@ -61,7 +59,7 @@ async def test_repo_concurrent_reads() -> None:
     async def read_library(lib_id: UUID) -> Library:
         return await service.get_library(lib_id)
 
-    # Read the library 10 times sequentially 
+    # Read the library 10 times sequentially
     # (can't easily use ThreadPoolExecutor with async functions)
     results = []
     for _ in range(10):

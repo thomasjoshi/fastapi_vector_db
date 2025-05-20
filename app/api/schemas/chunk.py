@@ -2,7 +2,7 @@
 Schemas for chunk operations.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 class ChunkCreate(BaseModel):
     """Schema for creating a new chunk."""
-    
+
     text: str
     embedding: List[float]
     metadata: Dict[str, str] = Field(default_factory=dict)
@@ -39,14 +39,14 @@ class SearchQuery(BaseModel):
 
 class SearchHit(BaseModel):
     """Schema for a single search result."""
-    
+
     chunk: ChunkRead
     score: float
 
 
 class SearchResponse(BaseModel):
     """Schema for search response."""
-    
+
     hits: List[SearchHit]
 
 

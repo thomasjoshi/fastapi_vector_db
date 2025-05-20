@@ -2,13 +2,11 @@
 Unit tests for the LibraryService class.
 """
 from typing import List, Tuple
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
 import pytest_asyncio
-import asyncio
-from unittest.mock import AsyncMock
 
 from app.domain.models import Library
 from app.repos.in_memory import InMemoryRepo
@@ -80,7 +78,9 @@ class TestLibraryService:
         # Arrange
         service = LibraryService(mock_repo, mock_metrics)
         lib_id = uuid4()
-        mock_repo.get_library.side_effect = RepoNotFoundError(f"Library with ID {lib_id} not found")
+        mock_repo.get_library.side_effect = RepoNotFoundError(
+            f"Library with ID {lib_id} not found"
+        )
 
         # Act & Assert
         with pytest.raises(NotFoundError) as excinfo:
@@ -117,12 +117,14 @@ class TestLibraryService:
         service = LibraryService(mock_repo, mock_metrics)
         lib = Library.example()
         lib_id = lib.id
-        
+
         # Set up update_library_if_exists to return False
         mock_repo.update_library_if_exists.return_value = False
-        
+
         # Set up get_library to raise NotFoundError
-        mock_repo.get_library.side_effect = RepoNotFoundError(f"Library with ID {lib_id} not found")
+        mock_repo.get_library.side_effect = RepoNotFoundError(
+            f"Library with ID {lib_id} not found"
+        )
 
         # Act & Assert
         with pytest.raises(NotFoundError) as excinfo:
@@ -156,9 +158,11 @@ class TestLibraryService:
         # Arrange
         service = LibraryService(mock_repo, mock_metrics)
         lib_id = uuid4()
-        
+
         # Configure delete_library to raise error
-        mock_repo.delete_library.side_effect = RepoNotFoundError(f"Library with ID {lib_id} not found")
+        mock_repo.delete_library.side_effect = RepoNotFoundError(
+            f"Library with ID {lib_id} not found"
+        )
 
         # Act & Assert
         with pytest.raises(NotFoundError) as excinfo:

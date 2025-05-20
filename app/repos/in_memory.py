@@ -5,10 +5,12 @@ This is a simple in-memory implementation of the repository interface.
 It uses a dictionary to store libraries and their documents.
 """
 import threading
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Dict, Optional
 from uuid import UUID, uuid4
-import asyncio
 
+from loguru import logger
+
+from app.core.persistence import Persistence, get_persistence
 from app.domain.models import Chunk, Document, Library
 from app.services.exceptions import NotFoundError
 
@@ -99,6 +101,7 @@ class InMemoryRepo:
         """Initialize the repository with an empty dictionary of libraries."""
         self._libraries: Dict[UUID, Library] = {}
         self._lock = ReadWriteLock()
+        self._persistence: Optional[Persistence] = None
 
     # Library CRUD operations
 
@@ -109,8 +112,11 @@ class InMemoryRepo:
         Returns the ID of the library.
         """
         from loguru import logger
-        logger.info(f"InMemoryRepo.add_library: Adding library with ID {library.id}, type: {type(library.id)}")
-        
+
+        logger.info(
+            f"InMemoryRepo.add_library: Adding library with ID {library.id}, type: {type(library.id)}"
+        )
+
         with self._lock.write_lock():
             # Generate an ID if one is not provided
             if library.id is None:
@@ -122,7 +128,9 @@ class InMemoryRepo:
 
             # Add the library to the dictionary
             self._libraries[library.id] = library
-            logger.info(f"InMemoryRepo.add_library: Library added, dictionary keys: {list(self._libraries.keys())}")
+            logger.info(
+                f"InMemoryRepo.add_library: Library added, dictionary keys: {list(self._libraries.keys())}"
+            )
             return library.id
 
     async def get_library(self, library_id: UUID) -> Library:
@@ -131,14 +139,23 @@ class InMemoryRepo:
         Raises NotFoundError if the library does not exist.
         """
         from loguru import logger
-        logger.info(f"InMemoryRepo.get_library: Getting library with ID {library_id}, type: {type(library_id)}")
-        logger.info(f"InMemoryRepo.get_library: Available library IDs: {list(self._libraries.keys())}")
-        
+
+        logger.info(
+            f"InMemoryRepo.get_library: Getting library with ID {library_id}, type: {type(library_id)}"
+        )
+        logger.info(
+            f"InMemoryRepo.get_library: Available library IDs: {list(self._libraries.keys())}"
+        )
+
         with self._lock.read_lock():
             if library_id not in self._libraries:
-                logger.error(f"InMemoryRepo.get_library: Library with ID {library_id} not found")
-                raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id)
-            logger.info(f"InMemoryRepo.get_library: Library found")
+                logger.error(
+                    f"InMemoryRepo.get_library: Library with ID {library_id} not found"
+                )
+                raise NotFoundError(
+                    f"Library with ID {library_id} not found", "Library", library_id
+                )
+            logger.info("InMemoryRepo.get_library: Library found")
             return self._libraries[library_id]
 
     async def update_library(self, library_id: UUID, library: Library) -> bool:
@@ -149,13 +166,17 @@ class InMemoryRepo:
         """
         with self._lock.write_lock():
             if library_id not in self._libraries:
-                raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id)
+                raise NotFoundError(
+                    f"Library with ID {library_id} not found", "Library", library_id
+                )
 
             # Update the library in the dictionary
             self._libraries[library_id] = library
             return True
-            
-    async def update_library_if_exists(self, library_id: UUID, library: Library) -> bool:
+
+    async def update_library_if_exists(
+        self, library_id: UUID, library: Library
+    ) -> bool:
         """
         Update a library if it exists.
         Returns True if the library was updated, False if it does not exist.
@@ -176,7 +197,9 @@ class InMemoryRepo:
         """
         with self._lock.write_lock():
             if library_id not in self._libraries:
-                raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id)
+                raise NotFoundError(
+                    f"Library with ID {library_id} not found", "Library", library_id
+                )
 
             # Delete the library from the dictionary
             del self._libraries[library_id]
@@ -231,7 +254,7 @@ class InMemoryRepo:
                 raise NotFoundError(
                     f"Document with ID {document_id} not found in library {library_id}",
                     "Document",
-                    document_id
+                    document_id,
                 )
 
             # Create a new list of documents with the updated document
@@ -261,7 +284,7 @@ class InMemoryRepo:
                 raise NotFoundError(
                     f"Document with ID {document_id} not found in library {library_id}",
                     "Document",
-                    document_id
+                    document_id,
                 )
 
             # Create a new list of documents without the deleted document
@@ -317,8 +340,8 @@ class InMemoryRepo:
                     return chunk
             raise NotFoundError(
                 f"Chunk with ID {chunk_id} not found in document {document_id} in library {library_id}",
-                "Chunk", 
-                chunk_id
+                "Chunk",
+                chunk_id,
             )
 
     async def update_chunk(
@@ -337,7 +360,7 @@ class InMemoryRepo:
                 raise NotFoundError(
                     f"Chunk with ID {chunk_id} not found in document {document_id} in library {library_id}",
                     "Chunk",
-                    chunk_id
+                    chunk_id,
                 )
 
             # Create a new list of chunks with the updated chunk
@@ -354,7 +377,9 @@ class InMemoryRepo:
             await self.update_document(library_id, document_id, updated_document)
             return True
 
-    async def delete_chunk(self, library_id: UUID, document_id: UUID, chunk_id: UUID) -> bool:
+    async def delete_chunk(
+        self, library_id: UUID, document_id: UUID, chunk_id: UUID
+    ) -> bool:
         """
         Delete a chunk from a document in a library.
         Raises NotFoundError if the library, document, or chunk does not exist.
@@ -368,7 +393,7 @@ class InMemoryRepo:
                 raise NotFoundError(
                     f"Chunk with ID {chunk_id} not found in document {document_id} in library {library_id}",
                     "Chunk",
-                    chunk_id
+                    chunk_id,
                 )
 
             # Create a new list of chunks without the deleted chunk
@@ -390,22 +415,49 @@ class InMemoryRepo:
     async def _get_library_or_raise(self, library_id: UUID) -> Library:
         """Get a library by ID or raise NotFoundError if it doesn't exist."""
         if library_id not in self._libraries:
-            raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id)
+            raise NotFoundError(
+                f"Library with ID {library_id} not found", "Library", library_id
+            )
         return self._libraries[library_id]
 
-    async def _get_document_or_raise(self, library_id: UUID, document_id: UUID) -> Document:
+    async def _get_document_or_raise(
+        self, library_id: UUID, document_id: UUID
+    ) -> Document:
         """Get a document by ID from a library or raise NotFoundError if it doesn't exist."""
         library = await self._get_library_or_raise(library_id)
         for doc in library.documents:
             if doc.id == document_id:
                 return doc
         raise NotFoundError(
-            f"Document with ID {document_id} not found in library {library_id}", "Document", document_id
+            f"Document with ID {document_id} not found in library {library_id}",
+            "Document",
+            document_id,
         )
 
 
 # Singleton instance for the application lifetime
 _repo = InMemoryRepo()
+
+
+async def initialize_repo() -> InMemoryRepo:
+    """Initialize the repository and load persisted data if enabled."""
+    global _repo
+    
+    # Initialize persistence
+    persistence = get_persistence()
+    _repo._persistence = persistence
+    
+    # Load any persisted data
+    libraries = await persistence.load_from_disk()
+    if libraries:
+        with _repo._lock.write_lock():
+            _repo._libraries = libraries
+            logger.info(f"Loaded {len(libraries)} libraries from persistence")
+    
+    # Start auto-save background task if enabled
+    await persistence.start_auto_save(lambda: _repo._libraries)
+    
+    return _repo
 
 
 async def get_repo() -> InMemoryRepo:
@@ -415,7 +467,8 @@ async def get_repo() -> InMemoryRepo:
     Returns:
         An instance of InMemoryRepo
     """
-    from loguru import logger
-    logger.info(f"get_repo called, returning repo with {len(_repo._libraries)} libraries")
-    logger.info(f"Library IDs in repo: {list(_repo._libraries.keys())}")
+    logger.debug(
+        f"get_repo called, returning repo with {len(_repo._libraries)} libraries"
+    )
+    logger.debug(f"Library IDs in repo: {list(_repo._libraries.keys())}")
     return _repo

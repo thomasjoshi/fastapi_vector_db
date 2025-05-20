@@ -8,6 +8,11 @@ class Settings(BaseSettings):
     APP_NAME: str = "fastapi-vector-db"
     ENV: str = "dev"
     LOG_LEVEL: str = "INFO"
+    
+    # Persistence settings
+    ENABLE_PERSISTENCE: bool = False
+    PERSISTENCE_PATH: str = "./data/vector_db.json"
+    PERSISTENCE_INTERVAL: int = 300  # Save every 5 minutes
 
     model_config = {"env_prefix": "APP_"}
 

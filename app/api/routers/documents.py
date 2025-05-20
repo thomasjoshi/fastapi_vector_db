@@ -4,12 +4,11 @@ Router for document operations.
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
-from starlette.concurrency import run_in_threadpool
 
+from app.api.dependencies import get_document_service
 from app.api.schemas.document import DocumentCreate, DocumentRead
 from app.domain.models import Document
 from app.services.document import DocumentService
-from app.api.dependencies import get_document_service
 
 router = APIRouter(tags=["documents"])
 
@@ -26,14 +25,18 @@ async def create_document(
 ):
     """Create a new document in a library."""
     from loguru import logger
-    logger.info(f"Creating document in library with ID {library_id}, type: {type(library_id)}")
-    
+
+    logger.info(
+        f"Creating document in library with ID {library_id}, type: {type(library_id)}"
+    )
+
     # Generate an ID for the document if not provided
     document = Document(chunks=[], metadata=document_data.metadata)
     if document.id is None:
         from uuid import uuid4
+
         document.id = uuid4()
-    
+
     result = await service.add_document(library_id, document)
     return DocumentRead(id=result.id, metadata=result.metadata)
 

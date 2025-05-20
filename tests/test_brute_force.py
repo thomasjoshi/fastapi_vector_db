@@ -8,7 +8,7 @@ import time
 import numpy as np
 import pytest
 
-from app.indexing.linear_search import LinearSearchCosine, DuplicateVectorError
+from app.indexing.linear_search import DuplicateVectorError, LinearSearchCosine
 
 
 class TestLinearSearchCosine:

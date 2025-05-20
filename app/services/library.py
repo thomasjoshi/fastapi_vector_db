@@ -58,7 +58,9 @@ class LibraryService:
             await self._repo.get_library(library_id)
         except RepoNotFoundError as e:
             logger.warning(f"Library with ID {library_id} not found")
-            raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id) from e
+            raise NotFoundError(
+                f"Library with ID {library_id} not found", "Library", library_id
+            ) from e
 
     async def add_library(self, library: Library) -> UUID:
         """
@@ -98,7 +100,9 @@ class LibraryService:
             return await self._repo.get_library(library_id)
         except RepoNotFoundError as e:
             logger.warning(f"Library with ID {library_id} not found")
-            raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id) from e
+            raise NotFoundError(
+                f"Library with ID {library_id} not found", "Library", library_id
+            ) from e
 
     async def update_library(self, library_id: UUID, updated: Library) -> None:
         """
@@ -140,4 +144,6 @@ class LibraryService:
             await self._repo.delete_library(library_id)
         except RepoNotFoundError as e:
             logger.warning(f"Library with ID {library_id} not found")
-            raise NotFoundError(f"Library with ID {library_id} not found", "Library", library_id) from e
+            raise NotFoundError(
+                f"Library with ID {library_id} not found", "Library", library_id
+            ) from e

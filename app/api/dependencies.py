@@ -1,14 +1,14 @@
 """
 Dependency injection for FastAPI.
 """
+
 from fastapi import Depends
-from typing import Callable
 
 from app.repos.in_memory import InMemoryRepo
-from app.services.document import DocumentService
 from app.services.chunk import ChunkService
-from app.services.search import SearchService
+from app.services.document import DocumentService
 from app.services.library import LibraryService, MetricsCallback, noop_metrics_callback
+from app.services.search import SearchService
 
 # Singleton instances for the application lifetime
 _repo = InMemoryRepo()
@@ -19,7 +19,7 @@ def get_repo() -> InMemoryRepo:
     """
     Dependency that provides the repository instance.
     Returns a singleton repository instance for the entire application.
-    
+
     Returns:
         An instance of InMemoryRepo
     """
@@ -29,7 +29,7 @@ def get_repo() -> InMemoryRepo:
 def get_metrics_callback() -> MetricsCallback:
     """
     Dependency that provides the metrics callback.
-    
+
     Returns:
         A metrics callback function
     """
@@ -39,10 +39,10 @@ def get_metrics_callback() -> MetricsCallback:
 def get_library_service(repo: InMemoryRepo = Depends(get_repo)) -> LibraryService:
     """
     Get a library service instance.
-    
+
     Args:
         repo: The repository to use
-        
+
     Returns:
         An instance of LibraryService
     """
@@ -52,10 +52,10 @@ def get_library_service(repo: InMemoryRepo = Depends(get_repo)) -> LibraryServic
 def get_document_service(repo: InMemoryRepo = Depends(get_repo)) -> DocumentService:
     """
     Get a document service instance.
-    
+
     Args:
         repo: The repository to use
-        
+
     Returns:
         An instance of DocumentService
     """
@@ -65,10 +65,10 @@ def get_document_service(repo: InMemoryRepo = Depends(get_repo)) -> DocumentServ
 def get_chunk_service(repo: InMemoryRepo = Depends(get_repo)) -> ChunkService:
     """
     Get a chunk service instance.
-    
+
     Args:
         repo: The repository to use
-        
+
     Returns:
         An instance of ChunkService
     """
@@ -78,10 +78,10 @@ def get_chunk_service(repo: InMemoryRepo = Depends(get_repo)) -> ChunkService:
 def get_search_service(repo: InMemoryRepo = Depends(get_repo)) -> SearchService:
     """
     Get a search service instance.
-    
+
     Args:
         repo: The repository to use
-        
+
     Returns:
         An instance of SearchService
     """

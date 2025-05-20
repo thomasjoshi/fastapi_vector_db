@@ -1,7 +1,6 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Response, status
-from fastapi.concurrency import run_in_threadpool
 
 from app.api.dependencies import get_library_service
 from app.api.schemas.library import (

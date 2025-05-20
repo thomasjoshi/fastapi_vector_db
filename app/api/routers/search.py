@@ -2,16 +2,20 @@
 Router for search operations.
 """
 
-from typing import List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.schemas.chunk import ChunkRead, IndexResponse, SearchQuery, SearchResponse, SearchHit
+from app.api.dependencies import get_search_service
+from app.api.schemas.chunk import (
+    ChunkRead,
+    IndexResponse,
+    SearchHit,
+    SearchQuery,
+    SearchResponse,
+)
 from app.services.exceptions import NotFoundError, ValidationError
 from app.services.search import SearchService
-from app.api.dependencies import get_search_service
-
 
 # Create router
 router = APIRouter(tags=["search"])
@@ -24,7 +28,7 @@ async def index_library(
 ) -> IndexResponse:
     """
     Index a library for vector search.
-    
+
     This operation builds a vector index for the library,
     enabling efficient similarity search.
     """
@@ -51,12 +55,12 @@ async def search_library(
 ) -> SearchResponse:
     """
     Search for similar chunks in a library.
-    
+
     Returns a list of chunks sorted by similarity to the query vector.
     """
     try:
         results = await service.search(library_id, query.embedding, query.k)
-        
+
         # Convert to SearchResponse schema
         hits = []
         for chunk, score in results:
@@ -67,7 +71,7 @@ async def search_library(
                 metadata=chunk.metadata,
             )
             hits.append(SearchHit(chunk=chunk_read, score=score))
-            
+
         return SearchResponse(hits=hits)
     except NotFoundError as e:
         raise HTTPException(

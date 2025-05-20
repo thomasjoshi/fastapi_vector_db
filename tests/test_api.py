@@ -1,16 +1,15 @@
 """Tests for the Vector DB API."""
 
-import uuid
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
-from app.domain.models import Library, Document, Chunk
-from tests.test_search import create_test_library
+from app.domain.models import Chunk, Document, Library
 from app.main import app
 
 # Create a test client with a shared repository instance
-from app.repos.in_memory import InMemoryRepo, _repo
+from app.repos.in_memory import _repo
+from tests.test_search import create_test_library
 
 # Reset the repository before each test
 _repo._libraries = {}
@@ -162,47 +161,46 @@ def test_centralized_error_handling() -> None:
     assert error_data["resource_id"] == "00000000-0000-0000-0000-000000000000"
 
 
-import asyncio
-
 @pytest.mark.asyncio
 async def test_document_chunk_search_flow_async() -> None:
     """Async implementation of the document chunk search flow test."""
     from loguru import logger
+
     from app.repos.in_memory import InMemoryRepo
-    from app.services.library import LibraryService
-    from app.services.document import DocumentService
     from app.services.chunk import ChunkService
+    from app.services.document import DocumentService
+    from app.services.library import LibraryService
     from app.services.search import SearchService
-    
+
     # Create a shared repository instance for all services
     repo = InMemoryRepo()
     library_service = LibraryService(repo)
     document_service = DocumentService(repo)
     chunk_service = ChunkService(repo)
     search_service = SearchService(repo)
-    
+
     # Create a library directly using the service
     lib = Library.example()
     library_id = await library_service.add_library(lib)
     logger.info(f"Created library with ID {library_id}")
-    
+
     # Create a document directly using the service
     doc = Document(chunks=[], metadata={"source": "test", "author": "test_user"})
     document = await document_service.add_document(library_id, doc)
     doc_id = document.id
     logger.info(f"Created document with ID {doc_id}")
-    
+
     # Create chunks with one-hot vectors
     chunks = []
     for i in range(3):
         # Create a chunk with one-hot encoding
         embedding = [0.0] * 5
         embedding[i] = 1.0  # Set one-hot encoding
-        
+
         chunk = Chunk(
             text=f"This is chunk {i}",
             metadata={"position": str(i)},  # Metadata values must be strings
-            embedding=embedding
+            embedding=embedding,
         )
         chunks.append(chunk)
 
@@ -219,20 +217,20 @@ async def test_document_chunk_search_flow_async() -> None:
     query_embedding = [0.0] * 5
     query_embedding[1] = 1.0  # Should match the second chunk
     results = await search_service.search(library_id, query_embedding, k=1)
-    
+
     # Verify search results
     assert len(results) > 0, "Search should return at least one result"
     # Check if the top result has position 1 (the second chunk)
     assert results[0][0].metadata.get("position") == "1"
-    
+
     # Delete the document
     await document_service.delete_document(library_id, doc_id)
-    
+
     # Delete the library
     await library_service.delete_library(library_id)
-    
+
     logger.info("Test completed successfully")
-    
+
     # Verify the library is deleted
     try:
         await library_service.get_library(library_id)
@@ -241,47 +239,50 @@ async def test_document_chunk_search_flow_async() -> None:
         # Expected exception
         pass
 
+
 import pytest
+
 
 @pytest.mark.asyncio
 async def test_document_chunk_search_flow() -> None:
     """Test the full flow: create lib → add doc → add chunks → index → search → delete."""
     from loguru import logger
+
     from app.repos.in_memory import InMemoryRepo
-    from app.services.library import LibraryService
-    from app.services.document import DocumentService
     from app.services.chunk import ChunkService
+    from app.services.document import DocumentService
+    from app.services.library import LibraryService
     from app.services.search import SearchService
-    
+
     # Create a shared repository instance for all services
     repo = InMemoryRepo()
     library_service = LibraryService(repo)
     document_service = DocumentService(repo)
     chunk_service = ChunkService(repo)
     search_service = SearchService(repo)
-    
+
     # Create a library directly using the service
     lib = Library.example()
     library_id = await library_service.add_library(lib)
     logger.info(f"Created library with ID {library_id}")
-    
+
     # Create a document directly using the service
     doc = Document(chunks=[], metadata={"source": "test", "author": "test_user"})
     document = await document_service.add_document(library_id, doc)
     doc_id = document.id
     logger.info(f"Created document with ID {doc_id}")
-    
+
     # Create chunks with one-hot vectors
     chunks = []
     for i in range(3):
         # Create a chunk with one-hot encoding
         embedding = [0.0] * 5
         embedding[i] = 1.0  # Set one-hot encoding
-        
+
         chunk = Chunk(
             text=f"This is chunk {i}",
             metadata={"position": str(i)},  # Metadata values must be strings
-            embedding=embedding
+            embedding=embedding,
         )
         chunks.append(chunk)
 
@@ -301,20 +302,20 @@ async def test_document_chunk_search_flow() -> None:
     query_embedding = [0.0] * 5
     query_embedding[1] = 1.0  # Should match the second chunk
     results = await search_service.search(library_id, query_embedding, k=1)
-    
+
     # Verify search results
     assert len(results) > 0, "Search should return at least one result"
     # Check if the top result has position 1 (the second chunk)
     assert results[0][0].metadata.get("position") == "1"
-    
+
     # Delete the document
     await document_service.delete_document(library_id, doc_id)
-    
+
     # Delete the library
     await library_service.delete_library(library_id)
-    
+
     logger.info("Test completed successfully")
-    
+
     # Verify the library is deleted
     try:
         await library_service.get_library(library_id)
@@ -328,22 +329,22 @@ async def test_document_chunk_search_flow() -> None:
 async def test_dimension_mismatch() -> None:
     """Test that searching with wrong dimension returns ValidationError."""
     from app.repos.in_memory import InMemoryRepo
-    from app.services.search import SearchService
     from app.services.exceptions import ValidationError
-    
+    from app.services.search import SearchService
+
     # Create repo and add a library
     repo = InMemoryRepo()
     library = create_test_library()
     # We need to handle the fact that add_library is now async
     await repo.add_library(library)
-    
+
     # Create search service and index the library
     search_service = SearchService(repo)
     await search_service.index_library(library.id)
-    
+
     # Try to search with wrong dimension (should be 3, using 5)
     with pytest.raises(ValidationError) as excinfo:
         await search_service.search(library.id, [0.1, 0.2, 0.3, 0.4, 0.5], k=3)
-    
+
     # Verify the error message
     assert "dimension" in str(excinfo.value)
