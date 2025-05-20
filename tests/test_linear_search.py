@@ -93,8 +93,6 @@ class TestLinearSearchCosine:
         assert len(results) == 2
         assert results[0][0] == "x"
 
-
-
     def test_thread_safety(self):
         """Test thread safety."""
         index = LinearSearchCosine[int](dim=3)
@@ -121,6 +119,7 @@ class TestLinearSearchCosine:
     def test_metrics_callback(self):
         """Test metrics callback."""
         metrics = {}
+
         def observer(op: str, duration_ms: float) -> None:
             metrics.setdefault(op, []).append(duration_ms)
 
@@ -155,7 +154,7 @@ class TestLinearSearchCosine:
         # Verify performance and correctness
         assert bulk_time < individual_time
         assert index1.size() == index2.size()
-        
+
         # Check similarity in results
         query = np.random.randn(dim).tolist()
         results1 = index1.query(query, k=10)

@@ -18,6 +18,7 @@ T = TypeVar("T")
 _indices: Dict[UUID, Any] = {}
 _indices_lock = threading.RLock()  # Global lock for thread safety
 
+
 class SearchService(Generic[T]):
     """
     Service for vector similarity search across libraries.
@@ -34,7 +35,8 @@ class SearchService(Generic[T]):
 
         Args:
             repo: Repository for accessing libraries and chunks
-            index_class: Vector index implementation class to use (default: LinearSearchCosine)
+            index_class: Vector index implementation class to use
+                (default: LinearSearchCosine)
         """
         self._repo = repo
         self._index_class = index_class
@@ -51,33 +53,39 @@ class SearchService(Generic[T]):
 
         Raises:
             NotFoundError: If the library does not exist
-            ValidationError: If chunks have inconsistent dimensions or invalid embeddings
+            ValidationError: If chunks have inconsistent dimensions or invalid
+                embeddings
         """
         from loguru import logger
+
         start_time = time.time()
 
         try:
             with _indices_lock:
                 # Verify library exists
                 library = await self._repo.get_library(library_id)
-                
+
                 logger.info(f"Starting indexing for library {library_id}")
 
                 # Find all documents in the library
                 documents = library.documents
                 logger.info(f"Found {len(documents)} documents in library {library_id}")
-                
+
                 # Extract all chunks from documents
                 chunks = []
                 for document in documents:
                     # Extract chunks from the document
                     chunks.extend(document.chunks)
 
-                logger.info(f"Found {len(chunks)} chunks to index in library {library_id}")
+                logger.info(
+                    f"Found {len(chunks)} chunks to index in library {library_id}"
+                )
 
                 if not chunks:
                     # Create empty index if no chunks
-                    logger.warning(f"No chunks found in library {library_id}, creating empty index")
+                    logger.warning(
+                        f"No chunks found in library {library_id}, creating empty index"
+                    )
                     _indices[library_id] = self._index_class(dim=0)
                     return 0
 
@@ -85,45 +93,60 @@ class SearchService(Generic[T]):
                 invalid_chunks = [chunk for chunk in chunks if not chunk.embedding]
                 if invalid_chunks:
                     chunk_ids = [str(chunk.id) for chunk in invalid_chunks[:5]]
-                    logger.error(f"Found {len(invalid_chunks)} chunks with empty embeddings: {', '.join(chunk_ids)}")
+                    logger.error(
+                        f"Found {len(invalid_chunks)} chunks with empty embeddings: "
+                        f"{', '.join(chunk_ids)}"
+                    )
                     raise ValidationError(
-                        f"Found {len(invalid_chunks)} chunks with empty embeddings. First few: {', '.join(chunk_ids)}"
+                        f"Found {len(invalid_chunks)} chunks with empty embeddings. "
+                        f"First few: {', '.join(chunk_ids)}"
                     )
 
                 # Get the dimension of embeddings
                 dims = set(len(chunk.embedding) for chunk in chunks)
-                
+
                 if len(dims) > 1:
-                    logger.error(f"Inconsistent embedding dimensions in library: {dims}")
+                    logger.error(
+                        f"Inconsistent embedding dimensions in library: {dims}"
+                    )
                     raise ValidationError(f"Inconsistent embedding dimensions: {dims}")
-                
+
                 dim = dims.pop()
                 logger.info(f"Creating index with dimension {dim}")
-                
+
                 # Build embeddings list
                 embeddings = []
                 ids = []
                 for chunk in chunks:
                     embeddings.append(chunk.embedding)
                     ids.append(chunk.id)
-                
+
                 # Create index with proper dimension
                 try:
-                    logger.info(f"Creating index of type {self._index_class.__name__} with dimension {dim}")
+                    logger.info(
+                        f"Creating index of type {self._index_class.__name__} "
+                        f"with dimension {dim}"
+                    )
                     index = self._index_class(dim=dim)
-                    
+
                     # Build the index
                     logger.info(f"Building index with {len(embeddings)} embeddings")
                     index.build(embeddings=embeddings, ids=ids)
                     _indices[library_id] = index
-                    logger.info(f"Successfully built index with {len(embeddings)} embeddings")
+                    logger.info(
+                        f"Successfully built index with {len(embeddings)} embeddings"
+                    )
                 except Exception as e:
                     logger.error(f"Failed to create/build index: {str(e)}")
                     logger.exception("Exception details:")
-                    raise ValidationError(f"Failed to create/build index: {str(e)}")
+                    raise ValidationError(
+                        f"Failed to create/build index: {str(e)}"
+                    ) from e
 
                 end_time = time.time()
-                logger.info(f"Indexed {len(chunks)} chunks in {end_time - start_time:.2f}s")
+                logger.info(
+                    f"Indexed {len(chunks)} chunks in {end_time - start_time:.2f}s"
+                )
 
                 return len(chunks)
         except Exception as e:
@@ -146,15 +169,19 @@ class SearchService(Generic[T]):
 
         Raises:
             NotFoundError: If the library does not exist
-            ValidationError: If the library is not indexed or query vector has wrong dimension
+            ValidationError: If library is not indexed or query vector has
+                wrong dimension
         """
         # Call search and extract just the chunks
         results = await self.search(library_id, embedding, k)
         return [chunk for chunk, _ in results]
 
     async def search(
-        self, library_id: UUID, embedding: List[float], k: int = 5, 
-        metadata_filters: Dict[str, str] = None
+        self,
+        library_id: UUID,
+        embedding: List[float],
+        k: int = 5,
+        metadata_filters: Dict[str, str] = None,
     ) -> List[Tuple[Chunk, float]]:
         """
         Search for similar chunks in a library.
@@ -163,14 +190,16 @@ class SearchService(Generic[T]):
             library_id: ID of the library to search in
             embedding: Query vector
             k: Number of results to return
-            metadata_filters: Optional dictionary of metadata key-value pairs to filter results
+            metadata_filters: Optional dictionary of metadata key-value pairs
+                to filter results
 
         Returns:
             List of (chunk, score) tuples, sorted by score in descending order
 
         Raises:
             NotFoundError: If the library does not exist
-            ValidationError: If the library is not indexed or query vector has wrong dimension
+            ValidationError: If library is not indexed or query vector has
+                wrong dimension
         """
         start_time = time.time()
 
@@ -187,7 +216,8 @@ class SearchService(Generic[T]):
             # Check embedding dimension
             if index.size() > 0 and len(embedding) != index._dim:
                 raise ValidationError(
-                    f"Query embedding dimension {len(embedding)} does not match index dimension {index._dim}"
+                    f"Query embedding dimension {len(embedding)} does not match "
+                    f"index dimension {index._dim}"
                 )
 
             # Search index
@@ -200,11 +230,11 @@ class SearchService(Generic[T]):
             for doc in library.documents:
                 for c in doc.chunks:
                     chunk_map[c.id] = c
-            
+
             for chunk_id, score in results:
                 # Retrieve the chunk from the map
                 chunk = chunk_map.get(chunk_id)
-                
+
                 if chunk:  # Skip if chunk was deleted
                     # Apply metadata filters if provided
                     if metadata_filters:
@@ -212,10 +242,13 @@ class SearchService(Generic[T]):
                         matches = True
                         for key, value in metadata_filters.items():
                             # Skip chunks that don't match any filter criteria
-                            if key not in chunk.metadata or chunk.metadata[key] != value:
+                            if (
+                                key not in chunk.metadata
+                                or chunk.metadata[key] != value
+                            ):
                                 matches = False
                                 break
-                        
+
                         # Only add chunk if it matches all filters
                         if matches:
                             hits.append((chunk, score))

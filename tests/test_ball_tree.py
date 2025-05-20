@@ -172,7 +172,7 @@ class TestBallTreeCosine:
                     vec_id = thread_id * n_ops + i
                     vector = [float(thread_id), float(i), 0.0]
                     index.add(vec_id, vector)
-                    
+
                     if i % 10 == 0:
                         index.build([], [])
                         try:
@@ -190,11 +190,10 @@ class TestBallTreeCosine:
         index.build([], [])
         assert index.size() == n_threads * n_ops
 
-
-
     def test_metrics_callback(self):
         """Test metrics callback."""
         metrics = {}
+
         def observer(op: str, duration_ms: float) -> None:
             metrics.setdefault(op, []).append(duration_ms)
 
