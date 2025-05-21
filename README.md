@@ -107,15 +107,13 @@ The Ball Tree is a space-partitioning data structure that recursively divides th
 
 ### Theoretical Considerations for High-Dimensional Data
 
-In computational geometry and machine learning literature, space-partitioning data structures like Ball Trees may face challenges with very high-dimensional data due to what's known as the "curse of dimensionality":
+Space-partitioning data structures like Ball Trees may face challenges with very high-dimensional data due to what's known as the "curse of dimensionality":
 
 1. **Branch Pruning**: As dimensionality increases, more branches of the tree may need to be explored during search operations.
 
 2. **Partition Efficiency**: The effectiveness of spatial partitioning can theoretically decrease in higher dimensions.
 
 3. **Distance Metrics**: Distance calculations become more computationally intensive with more dimensions.
-
-For applications using high-dimensional embeddings, performance testing would be recommended to determine the most efficient algorithm for your specific use case.
 
 ### Performance Evaluation
 
