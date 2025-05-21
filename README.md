@@ -125,12 +125,6 @@ When choosing between LinearSearchCosine and BallTreeCosine for your application
 
 - **BallTreeCosine**: May offer improved query performance for certain datasets, particularly those with natural clustering properties.
 
-The project includes a benchmark script that you can use to evaluate performance with your specific data characteristics:
-
-```bash
-# Run your own benchmarks to determine the best algorithm for your use case
-python scripts/benchmark.py
-```
 
 ### Algorithm Selection Guidelines
 
@@ -196,14 +190,6 @@ uvicorn app.main:app --reload
 - **Key-Value Matching**: Support for exact matching on chunk metadata fields
 - **Efficient Design**: Filtering happens after vector search to maintain query performance
 
-## Cohere API Integration
-
-Seamlessly converts raw text into high-quality vector embeddings for semantic search:
-
-- **State-of-the-Art Embeddings**: Integrates with Cohere's `embed-english-v3.0` model (1024 dimensions)
-- **Configurable Models**: Model selection and API keys configurable through environment variables
-- **Asynchronous Processing**: Non-blocking API calls preserving the system's concurrent performance
-- **Graceful Failure Handling**: Comprehensive error handling with detailed error messages
 
 ```json
 # Example: Create a chunk with automatic embedding generation
