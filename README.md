@@ -181,7 +181,6 @@ uvicorn app.main:app --reload
 ### Thread-Safe Persistence
 - **Atomic Serialization**: Uses atomic file operations to prevent data corruption during persistence operations
 - **Configurable Checkpointing**: Auto-save intervals and file paths configurable through environment variables
-- **Efficient Serialization**: Custom to/from_bytes methods that maintain the full structure of indices, including tree topologies
 
 ### Metadata Filtering
 - **Post-Retrieval Filtering**: Simple two-phase approach that performs vector similarity search first, then filters results by metadata
