@@ -171,12 +171,12 @@ class BallTreeCosine(Generic[T]):
                 if self._matrix.shape[0] == 0:
                     self._matrix = cast(
                         np.ndarray[Tuple[int, int], np.dtype[np.float32]],
-                        np.array([normalized], dtype=np.float32)
+                        np.array([normalized], dtype=np.float32),
                     )
                 else:
                     self._matrix = cast(
                         np.ndarray[Tuple[int, int], np.dtype[np.float32]],
-                        np.vstack([self._matrix, normalized])
+                        np.vstack([self._matrix, normalized]),
                     )
 
                 # Add to ID mappings
@@ -230,8 +230,7 @@ class BallTreeCosine(Generic[T]):
             norms[norms == 0] = 1e-9  # Avoid division by zero
             normalized_vectors = vectors / norms
             self._matrix = cast(
-                np.ndarray[Tuple[int, int], np.dtype[np.float32]],
-                normalized_vectors
+                np.ndarray[Tuple[int, int], np.dtype[np.float32]], normalized_vectors
             )
 
             self._ids = list(ids)
@@ -270,8 +269,7 @@ class BallTreeCosine(Generic[T]):
             # If it's the last vector, just remove it
             if idx == len(self._ids) - 1:
                 self._matrix = cast(
-                    np.ndarray[Tuple[int, int], np.dtype[np.float32]],
-                    self._matrix[:-1]
+                    np.ndarray[Tuple[int, int], np.dtype[np.float32]], self._matrix[:-1]
                 )
                 self._ids.pop()
                 del self._id_to_idx[id]
@@ -282,8 +280,7 @@ class BallTreeCosine(Generic[T]):
                 # Update the matrix
                 self._matrix[idx] = self._matrix[-1]
                 self._matrix = cast(
-                    np.ndarray[Tuple[int, int], np.dtype[np.float32]],
-                    self._matrix[:-1]
+                    np.ndarray[Tuple[int, int], np.dtype[np.float32]], self._matrix[:-1]
                 )
 
                 # Update the ID mappings
@@ -475,9 +472,9 @@ class BallTreeCosine(Generic[T]):
             return
 
         # Calculate cosine similarity to the center
-        assert node.center is not None, (
-            "Internal node must have a center for axis comparison"
-        )
+        assert (
+            node.center is not None
+        ), "Internal node must have a center for axis comparison"
         center_sim = float(np.dot(query, node.center))
 
         # Calculate cosine distance to center

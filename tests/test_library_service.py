@@ -29,10 +29,9 @@ class TestLibraryService:
         return MagicMock()
 
     @pytest.fixture
-    def metrics_calls(self) -> Tuple[
-        List[Tuple[str, Dict[str, Any]]],
-        Callable[..., None]
-    ]:
+    def metrics_calls(
+        self,
+    ) -> Tuple[List[Tuple[str, Dict[str, Any]]], Callable[..., None]]:
         """Track metrics calls."""
         calls: List[Tuple[str, Dict[str, Any]]] = []
 
@@ -58,9 +57,7 @@ class TestLibraryService:
         assert result == lib.id
         mock_repo.add_library.assert_called_once_with(lib)
         mock_metrics.assert_called_once_with(
-            "library.add", 
-            library_id=str(lib.id), 
-            duration_ms=ANY
+            "library.add", library_id=str(lib.id), duration_ms=ANY
         )
 
     @pytest.mark.asyncio
@@ -81,9 +78,7 @@ class TestLibraryService:
         assert result == lib
         mock_repo.get_library.assert_called_once_with(lib_id)
         mock_metrics.assert_called_once_with(
-            "library.get", 
-            library_id=str(lib_id), 
-            duration_ms=ANY
+            "library.get", library_id=str(lib_id), duration_ms=ANY
         )
 
     @pytest.mark.asyncio
@@ -107,9 +102,7 @@ class TestLibraryService:
         assert str(lib_id) in str(excinfo.value)
         mock_repo.get_library.assert_called_once_with(lib_id)
         mock_metrics.assert_called_once_with(
-            "library.get_not_found", 
-            library_id=str(lib_id), 
-            duration_ms=ANY
+            "library.get_not_found", library_id=str(lib_id), duration_ms=ANY
         )
 
     @pytest.mark.asyncio
@@ -129,9 +122,7 @@ class TestLibraryService:
         # Assert
         mock_repo.update_library_if_exists.assert_called_once_with(lib_id, lib)
         mock_metrics.assert_called_once_with(
-            "library.update", 
-            library_id=str(lib_id), 
-            duration_ms=ANY
+            "library.update", library_id=str(lib_id), duration_ms=ANY
         )
         # Ensure we didn't need to fall back to the existence check
         mock_repo.get_library.assert_not_called()
@@ -162,9 +153,7 @@ class TestLibraryService:
         mock_repo.update_library_if_exists.assert_called_once_with(lib_id, lib)
         mock_repo.get_library.assert_called_once_with(lib_id)
         mock_metrics.assert_called_once_with(
-            "library.update_not_found", 
-            library_id=str(lib_id), 
-            duration_ms=ANY
+            "library.update_not_found", library_id=str(lib_id), duration_ms=ANY
         )
 
     @pytest.mark.asyncio
@@ -183,9 +172,7 @@ class TestLibraryService:
         # Assert
         mock_repo.delete_library.assert_called_once_with(lib_id)
         mock_metrics.assert_called_once_with(
-            "library.delete", 
-            library_id=str(lib_id), 
-            duration_ms=ANY
+            "library.delete", library_id=str(lib_id), duration_ms=ANY
         )
 
     @pytest.mark.asyncio
@@ -211,17 +198,13 @@ class TestLibraryService:
         assert str(lib_id) in str(excinfo.value)
         mock_repo.delete_library.assert_called_once_with(lib_id)
         mock_metrics.assert_called_once_with(
-            "library.delete_not_found", 
-            library_id=str(lib_id), 
-            duration_ms=ANY
+            "library.delete_not_found", library_id=str(lib_id), duration_ms=ANY
         )
 
     @pytest.mark.asyncio
     async def test_metrics_callback_integration(
-        self, metrics_calls: Tuple[
-            List[Tuple[str, Dict[str, Any]]],
-            Callable[..., None]
-        ]
+        self,
+        metrics_calls: Tuple[List[Tuple[str, Dict[str, Any]]], Callable[..., None]],
     ) -> None:
         """Test that metrics callback is correctly invoked."""
         # Arrange
@@ -262,7 +245,7 @@ class TestLibraryService:
     #     # Assuming the repo method is list_libraries and service calls it directly
     #     mock_repo.list_libraries.return_value = libraries_example
 
-    #     result = await service.list_libraries(skip=0, limit=10) 
+    #     result = await service.list_libraries(skip=0, limit=10)
 
     #     assert result == libraries_example
     #     mock_repo.list_libraries.assert_called_once_with(skip=0, limit=10)
@@ -278,7 +261,7 @@ class TestLibraryService:
         mock_repo.update_library_if_exists.return_value = True
 
         # Simulate successful update
-        await service.update_library(lib_update.id, lib_update) 
+        await service.update_library(lib_update.id, lib_update)
 
         # Assert that the correct repo method was called
         mock_repo.update_library_if_exists.assert_called_once_with(

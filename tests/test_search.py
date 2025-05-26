@@ -22,7 +22,7 @@ def create_test_library() -> Library:
     # Create chunks with different embeddings
     chunk1 = Chunk(
         id=uuid4(),
-        document_id=doc_id, # Use the generated doc_id
+        document_id=doc_id,  # Use the generated doc_id
         text="This is the first chunk",
         embedding=[1.0, 0.0, 0.0],  # pointing along x-axis
         metadata={"page": "1"},
@@ -30,7 +30,7 @@ def create_test_library() -> Library:
 
     chunk2 = Chunk(
         id=uuid4(),
-        document_id=doc_id, # Use the generated doc_id
+        document_id=doc_id,  # Use the generated doc_id
         text="This is the second chunk",
         embedding=[0.0, 1.0, 0.0],  # pointing along y-axis
         metadata={"page": "2"},
@@ -38,7 +38,7 @@ def create_test_library() -> Library:
 
     chunk3 = Chunk(
         id=uuid4(),
-        document_id=doc_id, # Use the generated doc_id
+        document_id=doc_id,  # Use the generated doc_id
         text="This is the third chunk",
         embedding=[0.0, 0.0, 1.0],  # pointing along z-axis
         metadata={"page": "3"},
@@ -46,7 +46,7 @@ def create_test_library() -> Library:
 
     # Create a document with these chunks
     document = Document(
-        id=doc_id, # Use the generated doc_id
+        id=doc_id,  # Use the generated doc_id
         chunks=[chunk1, chunk2, chunk3],
         metadata={"title": "Test Document"},
     )
@@ -184,7 +184,7 @@ async def test_reindex_library() -> None:
     assert initial_chunks_indexed == 3
 
     # Query before re-indexing
-    query_embedding = [0.9, 0.1, 0.0]  
+    query_embedding = [0.9, 0.1, 0.0]
     results_before_reindex = await search_service.query(
         library.id, query_embedding, k=1
     )
@@ -194,17 +194,17 @@ async def test_reindex_library() -> None:
     new_chunk_doc_id = library.documents[0].id
     new_chunk = Chunk(
         id=uuid4(),
-        document_id=new_chunk_doc_id, # Use the ID of the first document in the library
+        document_id=new_chunk_doc_id,  # Use the ID of the first document in the library
         text="This is a new very similar chunk",
         embedding=[0.95, 0.05, 0.0],
         metadata={"page": "new"},
     )
     library.documents[0].chunks.append(new_chunk)
-    await repo.update_library(library.id, library) 
+    await repo.update_library(library.id, library)
 
     # Re-index the library
     reindexed_chunks = await search_service.reindex_library(library.id)
-    assert reindexed_chunks == 4 
+    assert reindexed_chunks == 4
 
     # Query after re-indexing
     results_after_reindex = await search_service.query(library.id, query_embedding, k=1)

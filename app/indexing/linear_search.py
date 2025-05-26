@@ -169,13 +169,12 @@ class LinearSearchCosine(Generic[T]):
                 new_matrix = np.array(new_vectors, dtype=np.float32)
                 if self._matrix.shape[0] == 0:
                     self._matrix = cast(
-                        np.ndarray[Tuple[int, int], np.dtype[np.float32]], 
-                        new_matrix
+                        np.ndarray[Tuple[int, int], np.dtype[np.float32]], new_matrix
                     )
                 else:
                     self._matrix = cast(
-                        np.ndarray[Tuple[int, int], np.dtype[np.float32]], 
-                        np.vstack([self._matrix, new_matrix])
+                        np.ndarray[Tuple[int, int], np.dtype[np.float32]],
+                        np.vstack([self._matrix, new_matrix]),
                     )
                 self._ids.extend(new_ids)
 

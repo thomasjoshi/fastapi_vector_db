@@ -123,9 +123,7 @@ class Persistence:
                                 if "id" in chunk_data
                                 else uuid4()
                             ),
-                            document_id=(
-                                UUID(doc_data["id"])
-                            ),
+                            document_id=(UUID(doc_data["id"])),
                             text=chunk_data["text"],
                             embedding=chunk_data["embedding"],
                             metadata=chunk_data.get("metadata", {}),

@@ -31,8 +31,8 @@ class SearchService(Generic[T]):
     """
 
     def __init__(
-        self, 
-        repo: InMemoryRepo, 
+        self,
+        repo: InMemoryRepo,
         index_class: Type[VectorIndex[UUID]] = LinearSearchCosine,
     ) -> None:
         """
@@ -300,7 +300,7 @@ class SearchService(Generic[T]):
 
             # Verify library exists and get its chunks
             library = await self._repo.get_library(library_id)
-            
+
             all_chunks_with_embeddings = []
             for doc in library.documents:
                 for chunk in doc.chunks:
