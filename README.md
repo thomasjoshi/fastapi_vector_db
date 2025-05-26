@@ -157,6 +157,10 @@ git clone https://github.com/thomasjoshi/fastapi_vector_db.git
 cd fastapi_vector_db
 poetry install
 poetry env activate
+poetry run ruff check .
+poetry run black --check .
+poetry run mypy --strict .
+poetry run pytest -q
 
 # Run server
 uvicorn app.main:app --reload
