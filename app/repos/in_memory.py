@@ -111,11 +111,7 @@ class InMemoryRepo:
         If the library has no ID, one will be generated.
         Returns the ID of the library.
         """
-        from loguru import logger
-
-        logger.info(
-            f"InMemoryRepo.add_library: Adding library with ID {library.id}, type: {type(library.id)}"
-        )
+        logger.info(f"Repo.add_library: ID {library.id}, type: {type(library.id)}")
 
         with self._lock.write_lock():
             # Generate an ID if one is not provided
@@ -128,9 +124,7 @@ class InMemoryRepo:
 
             # Add the library to the dictionary
             self._libraries[library.id] = library
-            logger.info(
-                f"InMemoryRepo.add_library: Library added, dictionary keys: {list(self._libraries.keys())}"
-            )
+            logger.info(f"Repo.add_library: Added. Keys: {list(self._libraries.keys())}")
             return library.id
 
     async def get_library(self, library_id: UUID) -> Library:
@@ -138,25 +132,10 @@ class InMemoryRepo:
         Get a library by ID.
         Raises NotFoundError if the library does not exist.
         """
-        from loguru import logger
-
-        logger.info(
-            f"InMemoryRepo.get_library: Getting library with ID {library_id}, type: {type(library_id)}"
-        )
-        logger.info(
-            f"InMemoryRepo.get_library: Available library IDs: {list(self._libraries.keys())}"
-        )
-
+        logger.info(f"Repo.get_library: ID {library_id}, type: {type(library_id)}")
         with self._lock.read_lock():
-            if library_id not in self._libraries:
-                logger.error(
-                    f"InMemoryRepo.get_library: Library with ID {library_id} not found"
-                )
-                raise NotFoundError(
-                    f"Library with ID {library_id} not found", "Library", library_id
-                )
-            logger.info("InMemoryRepo.get_library: Library found")
-            return self._libraries[library_id]
+            logger.info(f"Repo.get_library: Found. Keys: {list(self._libraries.keys())}")
+            return self._get_library_or_raise(library_id)
 
     async def update_library(self, library_id: UUID, library: Library) -> bool:
         """
@@ -165,10 +144,7 @@ class InMemoryRepo:
         Returns True if the library was updated.
         """
         with self._lock.write_lock():
-            if library_id not in self._libraries:
-                raise NotFoundError(
-                    f"Library with ID {library_id} not found", "Library", library_id
-                )
+            await self._get_library_or_raise(library_id)  # Check if library exists
 
             # Update the library in the dictionary
             self._libraries[library_id] = library
@@ -198,7 +174,7 @@ class InMemoryRepo:
         with self._lock.write_lock():
             if library_id not in self._libraries:
                 raise NotFoundError(
-                    f"Library with ID {library_id} not found", "Library", library_id
+                    f"Library {library_id} not found", "Library", library_id
                 )
 
             # Delete the library from the dictionary
@@ -214,17 +190,16 @@ class InMemoryRepo:
         Returns the added document.
         """
         with self._lock.write_lock():
-            library = await self._get_library_or_raise(library_id)
+            await self._get_library_or_raise(library_id)  # Check if library exists
 
             # Create a new list of documents with the new/updated document
-            existing_docs = [doc for doc in library.documents if doc.id != document.id]
-            exists = len(existing_docs) != len(library.documents)
+            existing_docs = [doc for doc in self._libraries[library_id].documents if doc.id != document.id]
 
             # Create a new library with the updated documents list
             updated_library = Library(
-                id=library.id,
+                id=library_id,
                 documents=existing_docs + [document],
-                metadata=library.metadata,
+                metadata=self._libraries[library_id].metadata,
             )
 
             self._libraries[library_id] = updated_library
@@ -252,7 +227,7 @@ class InMemoryRepo:
             # Check if the document exists
             if not any(doc.id == document_id for doc in library.documents):
                 raise NotFoundError(
-                    f"Document with ID {document_id} not found in library {library_id}",
+                    f"Document {document_id} not found in library {library_id}",
                     "Document",
                     document_id,
                 )
@@ -282,13 +257,15 @@ class InMemoryRepo:
             # Check if the document exists
             if not any(doc.id == document_id for doc in library.documents):
                 raise NotFoundError(
-                    f"Document with ID {document_id} not found in library {library_id}",
+                    f"Document {document_id} not found in library {library_id}",
                     "Document",
                     document_id,
                 )
 
             # Create a new list of documents without the deleted document
-            updated_docs = [doc for doc in library.documents if doc.id != document_id]
+            updated_docs = [
+                doc for doc in library.documents if doc.id != document_id
+            ]
 
             # Create a new library with the updated documents list
             updated_library = Library(
@@ -309,17 +286,16 @@ class InMemoryRepo:
         Returns the added chunk.
         """
         with self._lock.write_lock():
-            document = await self._get_document_or_raise(library_id, document_id)
+            document_obj = await self._get_document_or_raise(library_id, document_id) # Check existence
 
             # Create a new list of chunks with the new/updated chunk
-            existing_chunks = [c for c in document.chunks if c.id != chunk.id]
-            exists = len(existing_chunks) != len(document.chunks)
+            existing_chunks = [c for c in document_obj.chunks if c.id != chunk.id]
 
             # Create a new document with the updated chunks list
             updated_document = Document(
-                id=document.id,
+                id=document_id,
                 chunks=existing_chunks + [chunk],
-                metadata=document.metadata,
+                metadata=document_obj.metadata,
             )
 
             # Update the document in the library
@@ -339,7 +315,7 @@ class InMemoryRepo:
                 if chunk.id == chunk_id:
                     return chunk
             raise NotFoundError(
-                f"Chunk with ID {chunk_id} not found in document {document_id} in library {library_id}",
+                f"Chunk {chunk_id} not found in doc {document_id}",
                 "Chunk",
                 chunk_id,
             )
@@ -358,7 +334,7 @@ class InMemoryRepo:
             # Check if the chunk exists
             if not any(chunk.id == chunk_id for chunk in document.chunks):
                 raise NotFoundError(
-                    f"Chunk with ID {chunk_id} not found in document {document_id} in library {library_id}",
+                    f"Chunk {chunk_id} not found in doc {document_id}",
                     "Chunk",
                     chunk_id,
                 )
@@ -370,7 +346,7 @@ class InMemoryRepo:
 
             # Create a new document with the updated chunks list
             updated_document = Document(
-                id=document.id, chunks=updated_chunks, metadata=document.metadata
+                id=document_id, chunks=updated_chunks, metadata=document.metadata
             )
 
             # Update the document in the library
@@ -391,7 +367,7 @@ class InMemoryRepo:
             # Check if the chunk exists
             if not any(chunk.id == chunk_id for chunk in document.chunks):
                 raise NotFoundError(
-                    f"Chunk with ID {chunk_id} not found in document {document_id} in library {library_id}",
+                    f"Chunk {chunk_id} not found in doc {document_id}",
                     "Chunk",
                     chunk_id,
                 )
@@ -403,7 +379,7 @@ class InMemoryRepo:
 
             # Create a new document with the updated chunks list
             updated_document = Document(
-                id=document.id, chunks=updated_chunks, metadata=document.metadata
+                id=document_id, chunks=updated_chunks, metadata=document.metadata
             )
 
             # Update the document in the library
@@ -416,7 +392,7 @@ class InMemoryRepo:
         """Get a library by ID or raise NotFoundError if it doesn't exist."""
         if library_id not in self._libraries:
             raise NotFoundError(
-                f"Library with ID {library_id} not found", "Library", library_id
+                f"Library {library_id} not found", "Library", library_id
             )
         return self._libraries[library_id]
 
@@ -429,7 +405,7 @@ class InMemoryRepo:
             if doc.id == document_id:
                 return doc
         raise NotFoundError(
-            f"Document with ID {document_id} not found in library {library_id}",
+            f"Doc {document_id} not found in lib {library_id}",
             "Document",
             document_id,
         )

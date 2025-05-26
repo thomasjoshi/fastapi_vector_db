@@ -18,7 +18,7 @@ class Chunk(BaseModel):
     @model_serializer
     def serialize_model(self) -> Dict[str, Any]:
         return {
-            "id": str(self.id).replace('-', ''),  # Format UUID without dashes for consistent parsing
+            "id": str(self.id).replace('-', ''),  # UUID without dashes
             "text": self.text,
             "embedding": self.embedding,
             "metadata": self.metadata,
@@ -35,7 +35,7 @@ class Document(BaseModel):
     @model_serializer
     def serialize_model(self) -> Dict[str, Any]:
         return {
-            "id": str(self.id).replace('-', ''),  # Format UUID without dashes for consistent parsing
+            "id": str(self.id).replace('-', ''),  # UUID without dashes
             "chunks": self.chunks,
             "metadata": self.metadata,
         }
@@ -51,7 +51,7 @@ class Library(BaseModel):
     @model_serializer
     def serialize_model(self) -> Dict[str, Any]:
         return {
-            "id": str(self.id).replace('-', ''),  # Format UUID without dashes for consistent parsing
+            "id": str(self.id).replace('-', ''),  # UUID without dashes
             "documents": self.documents,
             "metadata": self.metadata,
         }

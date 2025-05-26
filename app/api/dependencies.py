@@ -3,6 +3,7 @@ Dependency injection for FastAPI.
 """
 
 from fastapi import Depends
+from typing import Annotated
 
 from app.repos.in_memory import InMemoryRepo
 from app.services.chunk import ChunkService
@@ -36,7 +37,9 @@ def get_metrics_callback() -> MetricsCallback:
     return _metrics_callback
 
 
-def get_library_service(repo: InMemoryRepo = Depends(get_repo)) -> LibraryService:
+def get_library_service(
+    repo: Annotated[InMemoryRepo, Depends(get_repo)],
+) -> LibraryService:
     """
     Get a library service instance.
 
@@ -49,7 +52,9 @@ def get_library_service(repo: InMemoryRepo = Depends(get_repo)) -> LibraryServic
     return LibraryService(repo, _metrics_callback)
 
 
-def get_document_service(repo: InMemoryRepo = Depends(get_repo)) -> DocumentService:
+def get_document_service(
+    repo: Annotated[InMemoryRepo, Depends(get_repo)],
+) -> DocumentService:
     """
     Get a document service instance.
 
@@ -62,7 +67,9 @@ def get_document_service(repo: InMemoryRepo = Depends(get_repo)) -> DocumentServ
     return DocumentService(repo, _metrics_callback)
 
 
-def get_chunk_service(repo: InMemoryRepo = Depends(get_repo)) -> ChunkService:
+def get_chunk_service(
+    repo: Annotated[InMemoryRepo, Depends(get_repo)],
+) -> ChunkService:
     """
     Get a chunk service instance.
 
@@ -75,7 +82,9 @@ def get_chunk_service(repo: InMemoryRepo = Depends(get_repo)) -> ChunkService:
     return ChunkService(repo, _metrics_callback)
 
 
-def get_search_service(repo: InMemoryRepo = Depends(get_repo)) -> SearchService:
+def get_search_service(
+    repo: Annotated[InMemoryRepo, Depends(get_repo)],
+) -> SearchService:
     """
     Get a search service instance.
 
@@ -85,5 +94,5 @@ def get_search_service(repo: InMemoryRepo = Depends(get_repo)) -> SearchService:
     Returns:
         An instance of SearchService
     """
-    # SearchService doesn't use metrics callback, it needs a vector index observer with a different signature
+    # SearchService uses a vector index observer, not the standard metrics callback.
     return SearchService(repo)

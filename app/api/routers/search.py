@@ -5,6 +5,7 @@ Router for search operations.
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Annotated
 
 from app.api.dependencies import get_search_service
 from app.api.schemas.chunk import (
@@ -24,7 +25,7 @@ router = APIRouter(tags=["search"])
 @router.post("/libraries/{library_id}/index", response_model=IndexResponse)
 async def index_library(
     library_id: UUID,
-    service: SearchService = Depends(get_search_service),
+    service: Annotated[SearchService, Depends(get_search_service)],
 ) -> IndexResponse:
     """
     Index a library for vector search.
@@ -37,7 +38,7 @@ async def index_library(
     try:
         logger.info(f"Starting indexing for library {library_id}")
         chunks_indexed = await service.index_library(library_id)
-        logger.info(f"Successfully indexed {chunks_indexed} chunks in library {library_id}")
+        logger.info(f"Indexed {chunks_indexed} chunks in library {library_id}")
         return IndexResponse(chunks_indexed=chunks_indexed)
     except NotFoundError as e:
         logger.error(f"Library not found: {library_id} - {str(e)}")
@@ -46,13 +47,13 @@ async def index_library(
             detail=f"Library with ID {library_id} not found",
         ) from e
     except ValidationError as e:
-        logger.error(f"Validation error during indexing of library {library_id}: {str(e)}")
+        logger.error(f"Validation error indexing library {library_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Error indexing library: {str(e)}",
         ) from e
     except Exception as e:
-        logger.error(f"Unexpected error during indexing of library {library_id}: {str(e)}")
+        logger.error(f"Unexpected error indexing library {library_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred during indexing",
@@ -63,7 +64,7 @@ async def index_library(
 async def search_library(
     library_id: UUID,
     query: SearchQuery,
-    service: SearchService = Depends(get_search_service),
+    service: Annotated[SearchService, Depends(get_search_service)],
 ) -> SearchResponse:
     """
     Search for similar chunks in a library.
@@ -74,7 +75,7 @@ async def search_library(
     
     try:
         # Log search request
-        logger.info(f"Searching library {library_id} with query of dimension {len(query.embedding)}")
+        logger.info(f"Searching library {library_id}, query dim: {len(query.embedding)}")
         if query.metadata_filters:
             logger.info(f"Applying metadata filters: {query.metadata_filters}")
         
@@ -106,13 +107,13 @@ async def search_library(
             detail=f"Library with ID {library_id} not found",
         ) from e
     except ValidationError as e:
-        logger.error(f"Validation error during search in library {library_id}: {str(e)}")
+        logger.error(f"Validation error searching library {library_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Error searching library: {str(e)}",
         ) from e
     except Exception as e:
-        logger.error(f"Unexpected error during search in library {library_id}: {str(e)}")
+        logger.error(f"Unexpected error searching library {library_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred during search",

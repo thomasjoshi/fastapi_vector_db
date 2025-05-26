@@ -87,6 +87,10 @@ class SearchService(Generic[T]):
                         f"No chunks found in library {library_id}, creating empty index"
                     )
                     _indices[library_id] = self._index_class(dim=0)
+                    self._metrics(
+                        "index_library_no_chunks",
+                        duration_ms=(time.time() - start_time) * 1000,
+                    )
                     return 0
 
                 # Verify all chunks have valid embeddings
@@ -147,10 +151,17 @@ class SearchService(Generic[T]):
                 logger.info(
                     f"Indexed {len(chunks)} chunks in {end_time - start_time:.2f}s"
                 )
-
+                self._metrics(
+                    "index_library",
+                    duration_ms=(end_time - start_time) * 1000,
+                )
                 return len(chunks)
         except Exception as e:
             logger.error(f"Error during library indexing: {str(e)}")
+            self._metrics(
+                "index_library_error",
+                duration_ms=(time.time() - start_time) * 1000,
+            )
             raise
 
     async def query(
@@ -258,7 +269,10 @@ class SearchService(Generic[T]):
 
             end_time = time.time()
             print(f"Search completed in {end_time - start_time:.4f}s")
-
+            self._metrics(
+                "search",
+                duration_ms=(end_time - start_time) * 1000,
+            )
             return hits
 
     async def reindex_library(self, library_id: UUID) -> int:
@@ -281,3 +295,7 @@ class SearchService(Generic[T]):
 
             # Index the library
             return await self.index_library(library_id)
+
+    def _metrics(self, name: str, duration_ms: float) -> None:
+        # Implement metrics logging here
+        pass

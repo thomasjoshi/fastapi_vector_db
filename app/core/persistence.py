@@ -46,7 +46,9 @@ class Persistence:
             persistence_path: Path to save data to. If None, uses the setting from config.
         """
         self.persistence_path = (
-            persistence_path or settings.PERSISTENCE_PATH or "./data/vector_db.json"
+            persistence_path
+            or settings.PERSISTENCE_PATH
+            or "./data/vector_db.json"
         )
         self.persistence_enabled = settings.ENABLE_PERSISTENCE
         self.persistence_interval = settings.PERSISTENCE_INTERVAL
@@ -82,7 +84,7 @@ class Persistence:
             # Rename to the actual file (atomic operation on most filesystems)
             os.replace(temp_path, self.persistence_path)
             
-            logger.info(f"Successfully saved database to {self.persistence_path}")
+            logger.info(f"Saved database to {self.persistence_path}")
             return True
         except Exception as e:
             logger.error(f"Error saving database to disk: {e}")
@@ -140,7 +142,7 @@ class Persistence:
                 )
                 libraries[UUID(lib_id)] = library
 
-            logger.info(f"Successfully loaded {len(libraries)} libraries from {self.persistence_path}")
+            logger.info(f"Loaded {len(libraries)} libs from {self.persistence_path}")
             return libraries
         except Exception as e:
             logger.error(f"Error loading database from disk: {e}")
@@ -173,7 +175,7 @@ class Persistence:
                 logger.error(f"Error in auto-save task: {e}")
 
         self._save_task = asyncio.create_task(auto_save_task())
-        logger.info(f"Started auto-save task with interval {self.persistence_interval} seconds")
+        logger.info(f"Auto-save task started, interval: {self.persistence_interval}s")
 
     async def stop_auto_save(self) -> None:
         """Stop the auto-save background task."""

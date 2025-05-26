@@ -1,6 +1,6 @@
 from typing import Protocol
 from uuid import UUID
-
+import time
 from loguru import logger
 
 from app.domain.models import Library
@@ -73,11 +73,18 @@ class LibraryService:
         Returns:
             The ID of the added library
         """
+        start_time = time.time()
         logger.info(f"Adding library with ID {library.id}")
-        self._metrics("library.add", library_id=str(library.id))
-
-        await self._repo.add_library(library)
-        return library.id
+        try:
+            await self._repo.add_library(library)
+            self._metrics("library.add", duration_ms=(time.time() - start_time) * 1000)
+            return library.id
+        except Exception as e:
+            logger.error(f"Error adding library: {e}")
+            self._metrics(
+                "library.add_error", duration_ms=(time.time() - start_time) * 1000
+            )
+            raise  # Re-raise the exception after logging and metrics
 
     async def get_library(self, library_id: UUID) -> Library:
         """
@@ -93,16 +100,26 @@ class LibraryService:
         Raises:
             NotFoundError: If the library does not exist
         """
+        start_time = time.time()
         logger.info(f"Getting library with ID {library_id}")
-        self._metrics("library.get", library_id=str(library_id))
-
         try:
-            return await self._repo.get_library(library_id)
+            library = await self._repo.get_library(library_id)
+            self._metrics("library.get", duration_ms=(time.time() - start_time) * 1000)
+            return library
         except RepoNotFoundError as e:
             logger.warning(f"Library with ID {library_id} not found")
+            self._metrics(
+                "library.get_not_found", duration_ms=(time.time() - start_time) * 1000
+            )
             raise NotFoundError(
                 f"Library with ID {library_id} not found", "Library", library_id
             ) from e
+        except Exception as e:
+            logger.error(f"Error getting library {library_id}: {e}")
+            self._metrics(
+                "library.get_error", duration_ms=(time.time() - start_time) * 1000
+            )
+            raise  # Re-raise any other exception
 
     async def update_library(self, library_id: UUID, updated: Library) -> None:
         """
@@ -116,15 +133,29 @@ class LibraryService:
         Raises:
             NotFoundError: If the library does not exist
         """
+        start_time = time.time()
         logger.info(f"Updating library with ID {library_id}")
-        self._metrics("library.update", library_id=str(library_id))
-
-        # Try atomic update first
-        if not await self._repo.update_library_if_exists(library_id, updated):
-            # If atomic update fails, ensure the library exists to get the proper error
-            await self._ensure_exists(library_id)
-            # This should never happen if _ensure_exists doesn't raise
-            raise RuntimeError(f"Failed to update library with ID {library_id}")
+        try:
+            # Try atomic update first
+            if not await self._repo.update_library_if_exists(library_id, updated):
+                # If atomic update fails, ensure the library exists to get the proper error
+                await self._ensure_exists(library_id)
+                # This should never happen if _ensure_exists doesn't raise
+                raise RuntimeError(f"Failed to update library with ID {library_id}")
+            self._metrics("library.update", duration_ms=(time.time() - start_time) * 1000)
+        except NotFoundError as e:
+            logger.warning(f"Library not found for update: {library_id}")
+            self._metrics(
+                "library.update_not_found",
+                duration_ms=(time.time() - start_time) * 1000,
+            )
+            raise e
+        except Exception as e:
+            logger.error(f"Error updating library {library_id}: {e}")
+            self._metrics(
+                "library.update_error", duration_ms=(time.time() - start_time) * 1000
+            )
+            raise
 
     async def delete_library(self, library_id: UUID) -> None:
         """
@@ -137,13 +168,23 @@ class LibraryService:
         Raises:
             NotFoundError: If the library does not exist
         """
+        start_time = time.time()
         logger.info(f"Deleting library with ID {library_id}")
-        self._metrics("library.delete", library_id=str(library_id))
-
         try:
+            # Ensure the library exists before attempting deletion
+            await self._repo.get_library(library_id)
             await self._repo.delete_library(library_id)
-        except RepoNotFoundError as e:
-            logger.warning(f"Library with ID {library_id} not found")
-            raise NotFoundError(
-                f"Library with ID {library_id} not found", "Library", library_id
-            ) from e
+            self._metrics("library.delete", duration_ms=(time.time() - start_time) * 1000)
+        except NotFoundError as e:
+            logger.warning(f"Library not found for deletion: {library_id}")
+            self._metrics(
+                "library.delete_not_found",
+                duration_ms=(time.time() - start_time) * 1000,
+            )
+            raise e
+        except Exception as e:
+            logger.error(f"Error deleting library {library_id}: {e}")
+            self._metrics(
+                "library.delete_error", duration_ms=(time.time() - start_time) * 1000
+            )
+            raise

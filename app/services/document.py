@@ -49,7 +49,6 @@ class DocumentService:
             NotFoundError: If the library does not exist
         """
         start_time = time.time()
-
         try:
             # Verify library exists by trying to get it
             library = await self._repo.get_library(library_id)
@@ -57,9 +56,7 @@ class DocumentService:
             # Get documents from the library
             documents = library.documents
 
-            self._metrics(
-                "list_documents", duration_ms=(time.time() - start_time) * 1000
-            )
+            self._metrics("list_documents", duration_ms=(time.time() - start_time) * 1000)
             return documents
         except Exception as e:
             self._metrics(
@@ -84,7 +81,6 @@ class DocumentService:
             NotFoundError: If the library does not exist
         """
         start_time = time.time()
-
         try:
             # Add document to the library
             result = await self._repo.add_document(library_id, document)
@@ -114,7 +110,6 @@ class DocumentService:
             NotFoundError: If the library or document does not exist
         """
         start_time = time.time()
-
         try:
             # Get document from the library
             document = await self._repo.get_document(library_id, document_id)
@@ -149,7 +144,6 @@ class DocumentService:
             NotFoundError: If the library or document does not exist
         """
         start_time = time.time()
-
         try:
             # Update document in the repository
             await self._repo.update_document(library_id, document_id, updated)
@@ -183,7 +177,6 @@ class DocumentService:
             NotFoundError: If the library or document does not exist
         """
         start_time = time.time()
-
         try:
             # Delete document from the repository
             await self._repo.delete_document(library_id, document_id)

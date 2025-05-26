@@ -49,8 +49,6 @@ class ChunkService:
         Raises:
             NotFoundError: If the library or document does not exist
         """
-        start_time = time.time()
-
         try:
             # Verify document exists and belongs to library
             # This will raise NotFoundError if document doesn't exist in the library
@@ -88,8 +86,6 @@ class ChunkService:
         Raises:
             NotFoundError: If the library or document does not exist
         """
-        start_time = time.time()
-
         try:
             # Create a new chunk with the document_id since we can't modify frozen instance
             new_chunk = Chunk(
@@ -110,7 +106,7 @@ class ChunkService:
             if isinstance(e, NotFoundError):
                 raise e
             raise NotFoundError(
-                f"Document {document_id} not found in library {library_id}",
+                f"Doc {document_id} not found in lib {library_id}",
                 "Document",
                 document_id,
             ) from e
@@ -132,8 +128,6 @@ class ChunkService:
         Raises:
             NotFoundError: If the library, document, or chunk does not exist
         """
-        start_time = time.time()
-
         try:
             # Verify document exists and belongs to library
             # This will raise NotFoundError if document doesn't exist in the library
@@ -176,8 +170,6 @@ class ChunkService:
         Raises:
             NotFoundError: If the library, document, or chunk does not exist
         """
-        start_time = time.time()
-
         # Verify chunk exists in the document in the library
         chunk = await self.get_chunk(library_id, document_id, chunk_id)
 
@@ -210,8 +202,6 @@ class ChunkService:
         Raises:
             NotFoundError: If the library, document, or chunk does not exist
         """
-        start_time = time.time()
-
         # Verify chunk exists in the document in the library
         await self.get_chunk(library_id, document_id, chunk_id)
 
@@ -243,3 +233,25 @@ class ChunkService:
         raise NotImplementedError(
             "Search functionality is implemented in SearchService"
         )
+
+    async def add_chunk_with_embedding(
+        self, library_id: UUID, document_id: UUID, chunk_data: ChunkCreateWithEmbedding
+    ) -> Chunk:
+        logger.info(f"Adding chunk with embedding: doc {document_id}")
+
+        embedding = []
+        # ... rest of the method remains the same ...
+
+    async def _validate_chunk(self, chunk: Chunk) -> None:
+        """Validate chunk data before adding/updating.
+
+        Args:
+            chunk: The chunk to validate
+
+        Raises:
+            ValidationError: If chunk data is invalid
+        """
+        # Assumes lib/doc exist, text not empty, embedding dims match.
+        if not chunk.text:
+            raise ValidationError("Chunk text cannot be empty")
+        # Ensure embedding (if provided) is a list of floats

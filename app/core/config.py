@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     
     # Cohere API settings
     COHERE_API_KEY: str = "A1Fi5KBBNoekwBPIa833CBScs6Z2mHEtOXxr52KO"  # Default key from test instructions
-    COHERE_EMBEDDING_MODEL: str = "embed-english-v3.0"  # Default embedding model
+    COHERE_EMBEDDING_MODEL: str = "embed-english-v3.0"  # Default model
 
     model_config = {"env_prefix": "APP_"}
 

@@ -54,7 +54,7 @@ async def create_chunk_with_embedding(
             if not embedding:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to generate embedding from text. Empty result returned.",
+                    detail="Failed to generate embedding. Empty result.",
                 )
         except Exception as e:
             raise HTTPException(

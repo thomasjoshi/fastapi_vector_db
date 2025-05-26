@@ -4,6 +4,7 @@ Router for document operations.
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
+from typing import Annotated
 
 from app.api.dependencies import get_document_service
 from app.api.schemas.document import DocumentCreate, DocumentRead
@@ -21,7 +22,7 @@ router = APIRouter(tags=["documents"])
 async def create_document(
     library_id: UUID,
     document_data: DocumentCreate,
-    service: DocumentService = Depends(get_document_service),
+    service: Annotated[DocumentService, Depends(get_document_service)],
 ):
     """Create a new document in a library."""
     from loguru import logger
@@ -47,7 +48,7 @@ async def create_document(
 async def get_document(
     library_id: UUID,
     document_id: UUID,
-    service: DocumentService = Depends(get_document_service),
+    service: Annotated[DocumentService, Depends(get_document_service)],
 ):
     """Get a document by ID."""
     result = await service.get_document(library_id, document_id)
@@ -62,7 +63,7 @@ async def update_document(
     library_id: UUID,
     document_id: UUID,
     document_data: DocumentCreate,
-    service: DocumentService = Depends(get_document_service),
+    service: Annotated[DocumentService, Depends(get_document_service)],
 ):
     """Update a document."""
     document = Document(chunks=[], metadata=document_data.metadata)
@@ -76,7 +77,7 @@ async def update_document(
 async def delete_document(
     library_id: UUID,
     document_id: UUID,
-    service: DocumentService = Depends(get_document_service),
+    service: Annotated[DocumentService, Depends(get_document_service)],
 ):
     """Delete a document."""
     await service.delete_document(library_id, document_id)
