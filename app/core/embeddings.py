@@ -7,7 +7,7 @@ using the Cohere API.
 
 from typing import List, Optional, cast
 
-import cohere  # type: ignore[import-untyped]
+import cohere
 from loguru import logger
 
 from app.core.config import settings
