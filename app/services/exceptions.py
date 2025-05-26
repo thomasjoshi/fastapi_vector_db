@@ -32,7 +32,7 @@ class NotFoundError(ServiceError):
 
         Args:
             message: Human-readable error message
-            resource_type: Type of resource that was not found (e.g., "Library", "Document")
+            resource_type: Type of resource not found (e.g., "Library")
             resource_id: ID of the resource not found
         """
         self.resource_type = resource_type

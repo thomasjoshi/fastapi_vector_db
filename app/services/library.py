@@ -144,7 +144,7 @@ class LibraryService:
             if not await self._repo.update_library_if_exists(library_id, updated):
                 # If atomic update fails, ensure the library exists to get the proper error
                 await self._ensure_exists(library_id)
-                # This should not happen if _ensure_exists doesn't raise
+                # Should not happen
                 raise RuntimeError(f"Failed to update library with ID {library_id}")
             duration_ms = (time.time() - start_time) * 1000
             self._metrics("library.update", duration_ms=duration_ms)

@@ -77,7 +77,7 @@ async def search_library(
         # Log search request
         logger.info(f"Searching library {library_id}, query dim: {len(query.embedding)}")
         if query.metadata_filters:
-            logger.info(f"Applying metadata_filters: {query.metadata_filters}")
+            logger.info(f"Filters: {query.metadata_filters}")
         
         # Execute search
         results = await service.search(

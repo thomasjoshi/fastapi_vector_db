@@ -19,8 +19,8 @@ _parent_dir = os.path.dirname(_current_dir)
 sys.path.append(_parent_dir)
 
 import numpy as np
-from app.indexing.ball_tree import BallTreeCosine
-from app.indexing.linear_search import LinearSearchCosine
+from app.indexing.ball_tree import BallTreeCosine  # noqa: E402
+from app.indexing.linear_search import LinearSearchCosine  # noqa: E402
 
 
 def generate_random_vectors(
