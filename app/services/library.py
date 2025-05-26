@@ -38,7 +38,7 @@ class LibraryService:
 
         Args:
             repo: The repository to use for storage
-            metrics_callback: Optional callback for metrics collection
+            metrics_callback: Optional callback for metrics
         """
         self._repo = repo
         self._metrics = metrics_callback
@@ -46,32 +46,34 @@ class LibraryService:
     async def _ensure_exists(self, library_id: UUID) -> None:
         """
         Ensure that a library with the given ID exists.
-        Raises NotFoundError if the library does not exist.
+        Raises NotFoundError if the library is not found.
 
         Args:
             library_id: The ID of the library to check
 
         Raises:
-            NotFoundError: If the library does not exist
+            NotFoundError: If the library is not found
         """
         try:
             await self._repo.get_library(library_id)
         except RepoNotFoundError as e:
             logger.warning(f"Library with ID {library_id} not found")
             raise NotFoundError(
-                f"Library with ID {library_id} not found", "Library", library_id
+                message=f"Library with ID {library_id} not found",
+                item_type="Library",
+                item_id=library_id,
             ) from e
 
     async def add_library(self, library: Library) -> UUID:
         """
         Add a library to the repository.
-        Returns the ID of the added library.
+        Returns the ID of the added lib.
 
         Args:
             library: The library to add
 
         Returns:
-            The ID of the added library
+            The ID of the added lib
         """
         start_time = time.time()
         logger.info(f"Adding library with ID {library.id}")
@@ -89,7 +91,7 @@ class LibraryService:
     async def get_library(self, library_id: UUID) -> Library:
         """
         Get a library by ID.
-        Raises NotFoundError if the library does not exist.
+        Raises NotFoundError if the library is not found.
 
         Args:
             library_id: The ID of the library to get
@@ -98,7 +100,7 @@ class LibraryService:
             The library with the given ID
 
         Raises:
-            NotFoundError: If the library does not exist
+            NotFoundError: If the library is not found
         """
         start_time = time.time()
         logger.info(f"Getting library with ID {library_id}")
@@ -112,7 +114,9 @@ class LibraryService:
                 "library.get_not_found", duration_ms=(time.time() - start_time) * 1000
             )
             raise NotFoundError(
-                f"Library with ID {library_id} not found", "Library", library_id
+                message=f"Library with ID {library_id} not found",
+                item_type="Library",
+                item_id=library_id,
             ) from e
         except Exception as e:
             logger.error(f"Error getting library {library_id}: {e}")

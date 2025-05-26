@@ -30,7 +30,7 @@ class DocumentService:
 
         Args:
             repo: The repository to use for storage
-            metrics_callback: Optional callback for metrics collection
+            metrics_callback: Optional callback for metrics
         """
         self._repo = repo
         self._metrics = metrics_callback
@@ -40,13 +40,13 @@ class DocumentService:
         List all documents in a library.
 
         Args:
-            library_id: ID of the library to list documents from
+            library_id: ID of the library to list docs from
 
         Returns:
             List of documents in the library
 
         Raises:
-            NotFoundError: If the library does not exist
+            NotFoundError: If the library is not found
         """
         start_time = time.time()
         try:
@@ -71,14 +71,14 @@ class DocumentService:
         Add a document to a library.
 
         Args:
-            library_id: ID of the library to add the document to
+            library_id: ID of the library to add doc to
             document: Document to add
 
         Returns:
             The added document with its ID
 
         Raises:
-            NotFoundError: If the library does not exist
+            NotFoundError: If the library is not found
         """
         start_time = time.time()
         try:

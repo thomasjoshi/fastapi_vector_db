@@ -43,7 +43,7 @@ class Persistence:
         Initialize the persistence manager.
 
         Args:
-            persistence_path: Path to save data to. If None, uses the setting from config.
+            persistence_path: Path to save data. If None, uses config setting.
         """
         self.persistence_path = (
             persistence_path
@@ -95,7 +95,7 @@ class Persistence:
         Load libraries from disk.
 
         Returns:
-            Dictionary of libraries loaded from disk, or empty dict if file doesn't exist.
+            Dict of loaded libraries from disk, or empty dict if no file.
         """
         if not self.persistence_enabled:
             logger.debug("Persistence is disabled, skipping load.")

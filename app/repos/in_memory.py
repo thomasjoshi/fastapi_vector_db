@@ -124,7 +124,7 @@ class InMemoryRepo:
 
             # Add the library to the dictionary
             self._libraries[library.id] = library
-            logger.info(f"Repo.add_library: Added. Keys: {list(self._libraries.keys())}")
+            logger.info(f"Repo.add_library: Added. Keys: {list(self._libraries)}")
             return library.id
 
     async def get_library(self, library_id: UUID) -> Library:
@@ -134,7 +134,7 @@ class InMemoryRepo:
         """
         logger.info(f"Repo.get_library: ID {library_id}, type: {type(library_id)}")
         with self._lock.read_lock():
-            logger.info(f"Repo.get_library: Found. Keys: {list(self._libraries.keys())}")
+            logger.info(f"Repo.get_library: Found. Keys: {list(self._libraries)}")
             return self._get_library_or_raise(library_id)
 
     async def update_library(self, library_id: UUID, library: Library) -> bool:
@@ -193,7 +193,8 @@ class InMemoryRepo:
             await self._get_library_or_raise(library_id)  # Check if library exists
 
             # Create a new list of documents with the new/updated document
-            existing_docs = [doc for doc in self._libraries[library_id].documents if doc.id != document.id]
+            lib_docs = self._libraries[library_id].documents
+            existing_docs = [doc for doc in lib_docs if doc.id != document.id]
 
             # Create a new library with the updated documents list
             updated_library = Library(
@@ -286,7 +287,7 @@ class InMemoryRepo:
         Returns the added chunk.
         """
         with self._lock.write_lock():
-            document_obj = await self._get_document_or_raise(library_id, document_id) # Check existence
+            document_obj = await self._get_document_or_raise(library_id, document_id)
 
             # Create a new list of chunks with the new/updated chunk
             existing_chunks = [c for c in document_obj.chunks if c.id != chunk.id]
@@ -399,7 +400,7 @@ class InMemoryRepo:
     async def _get_document_or_raise(
         self, library_id: UUID, document_id: UUID
     ) -> Document:
-        """Get a document by ID from a library or raise NotFoundError if it doesn't exist."""
+        """Get a doc by ID from a lib or raise NotFoundError if it doesn't exist."""
         library = await self._get_library_or_raise(library_id)
         for doc in library.documents:
             if doc.id == document_id:

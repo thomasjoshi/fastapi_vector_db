@@ -77,7 +77,7 @@ async def search_library(
         # Log search request
         logger.info(f"Searching library {library_id}, query dim: {len(query.embedding)}")
         if query.metadata_filters:
-            logger.info(f"Applying metadata filters: {query.metadata_filters}")
+            logger.info(f"Applying metadata_filters: {query.metadata_filters}")
         
         # Execute search
         results = await service.search(
@@ -110,7 +110,7 @@ async def search_library(
         logger.error(f"Validation error searching library {library_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Error searching library: {str(e)}",
+            detail="No query embedding."
         ) from e
     except Exception as e:
         logger.error(f"Unexpected error searching library {library_id}: {str(e)}")

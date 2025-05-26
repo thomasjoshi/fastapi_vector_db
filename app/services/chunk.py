@@ -211,47 +211,16 @@ class ChunkService:
         self._metrics("delete_chunk")
 
     async def search_chunks(
-        self, library_id: UUID, query_vector: List[float], top_k: int = 10
-    ) -> List[Tuple[Chunk, float]]:
-        """
-        Search for chunks in a library by vector similarity.
-
-        Args:
-            library_id: ID of the library to search in
-            query_vector: Vector to search for
-            top_k: Number of results to return
-
-        Returns:
-            List of (chunk, score) tuples, sorted by score in descending order
-
-        Raises:
-            NotFoundError: If the library does not exist
-            ValidationError: If the library is not indexed or the query vector has the wrong dimension
-        """
-        # This is just a placeholder - the actual search functionality will be
-        # implemented in the SearchService
+        self, library_id: UUID, query_embedding: List[float], top_k: int
+    ) -> List[Chunk]:
+        """Search for similar chunks within a library."""
+        # This method is not implemented in ChunkService
+        # Search functionality is typically handled by a dedicated SearchService
+        # that uses an indexed representation of chunks (e.g., from a vector DB)
+        logger.warning(
+            "search_chunks is not implemented in ChunkService. Use SearchService."
+        )
+        # This method is not implemented in ChunkService
         raise NotImplementedError(
             "Search functionality is implemented in SearchService"
         )
-
-    async def add_chunk_with_embedding(
-        self, library_id: UUID, document_id: UUID, chunk_data: ChunkCreateWithEmbedding
-    ) -> Chunk:
-        logger.info(f"Adding chunk with embedding: doc {document_id}")
-
-        embedding = []
-        # ... rest of the method remains the same ...
-
-    async def _validate_chunk(self, chunk: Chunk) -> None:
-        """Validate chunk data before adding/updating.
-
-        Args:
-            chunk: The chunk to validate
-
-        Raises:
-            ValidationError: If chunk data is invalid
-        """
-        # Assumes lib/doc exist, text not empty, embedding dims match.
-        if not chunk.text:
-            raise ValidationError("Chunk text cannot be empty")
-        # Ensure embedding (if provided) is a list of floats
