@@ -18,10 +18,12 @@ from typing import (
     Sequence,
     Tuple,
     TypeVar,
+    cast,
 )
 
 import numpy as np
 from numpy.linalg import norm
+from numpy.typing import NDArray
 
 T = TypeVar("T")
 
@@ -39,8 +41,8 @@ class Node:
 
     def __init__(
         self,
-        indices: List[int] = None,
-        center: Optional[np.ndarray] = None,
+        indices: List[int] | None = None,
+        center: Optional[np.ndarray[Tuple[int], np.dtype[np.float32]]] = None,
         radius: float = 0.0,
         axis: int = 0,
         left: Optional["Node"] = None,
@@ -167,9 +169,9 @@ class BallTreeCosine(Generic[T]):
 
                 # Add to matrix
                 if self._matrix.shape[0] == 0:
-                    self._matrix = np.array([normalized], dtype=np.float32)
+                    self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], np.array([normalized], dtype=np.float32))
                 else:
-                    self._matrix = np.vstack([self._matrix, normalized])
+                    self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], np.vstack([self._matrix, normalized]))
 
                 # Add to ID mappings
                 self._ids.append(id)
@@ -208,7 +210,7 @@ class BallTreeCosine(Generic[T]):
                 raise ValueError(msg)
 
         if ids is None:
-            ids = list(range(len(embeddings)))  # type: ignore
+            ids = cast(List[T], list(range(len(embeddings))))
 
         if len(embeddings) != len(ids):
             raise ValueError("Number of embeddings must match number of IDs")
@@ -219,31 +221,13 @@ class BallTreeCosine(Generic[T]):
 
             # Normalize all vectors in one operation
             norms = np.linalg.norm(vectors, axis=1, keepdims=True)
-            # Avoid division by zero
-            norms[norms == 0] = 1.0
-            normalized_vectors = vectors / norms
+            norms[norms == 0] = 1e-9  # Avoid division by zero
+            self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], vectors / norms)
 
-            # Check for duplicate IDs
-            id_set = set(self._id_to_idx.keys())
-            new_ids: List[T] = []
-            new_vectors = []
+            self._ids = list(ids)
 
-            for i, id_val in enumerate(ids):
-                if id_val not in id_set:
-                    new_ids.append(id_val)
-                    new_vectors.append(normalized_vectors[i])
-
-            if new_vectors:
-                new_matrix = np.array(new_vectors, dtype=np.float32)
-                if self._matrix.shape[0] == 0:
-                    self._matrix = new_matrix
-                else:
-                    self._matrix = np.vstack([self._matrix, new_matrix])
-
-                # Update ID mappings
-                for id_val in new_ids:
-                    self._id_to_idx[id_val] = len(self._ids)
-                    self._ids.append(id_val)
+            # Rebuild the _id_to_idx mapping from scratch based on the new _ids
+            self._id_to_idx = {id_val: i for i, id_val in enumerate(self._ids)}
 
             # Build the tree
             self._build_tree()
@@ -275,7 +259,7 @@ class BallTreeCosine(Generic[T]):
 
             # If it's the last vector, just remove it
             if idx == len(self._ids) - 1:
-                self._matrix = self._matrix[:-1]
+                self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], self._matrix[:-1])
                 self._ids.pop()
                 del self._id_to_idx[id]
             else:
@@ -284,7 +268,7 @@ class BallTreeCosine(Generic[T]):
 
                 # Update the matrix
                 self._matrix[idx] = self._matrix[-1]
-                self._matrix = self._matrix[:-1]
+                self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], self._matrix[:-1])
 
                 # Update the ID mappings
                 self._ids[idx] = last_id
@@ -422,7 +406,7 @@ class BallTreeCosine(Generic[T]):
             root_snapshot = self._root
 
             # Normalize the query vector
-            query_vector = np.array(embedding, dtype=np.float32)
+            query_vector: NDArray[np.float32] = np.array(embedding, dtype=np.float32)
             query_norm = norm(query_vector)
             if query_norm > 0:
                 query_vector = query_vector / query_norm
@@ -447,10 +431,10 @@ class BallTreeCosine(Generic[T]):
     def _search_node(
         self,
         node: Node,
-        query: np.ndarray,
+        query: NDArray[np.float32],
         k: int,
         best: List[Tuple[float, T]],
-        matrix: np.ndarray,
+        matrix: np.ndarray[Tuple[int, int], np.dtype[np.float32]],
         ids: List[T],
     ) -> None:
         """
@@ -475,6 +459,7 @@ class BallTreeCosine(Generic[T]):
             return
 
         # Calculate cosine similarity to the center
+        assert node.center is not None, "Internal node must have a center"
         center_sim = float(np.dot(query, node.center))
 
         # Calculate cosine distance to center
@@ -494,6 +479,8 @@ class BallTreeCosine(Generic[T]):
             return
 
         # Decide which child to search first based on the splitting axis
+        assert node.axis is not None, "Internal node must have a splitting axis"
+        assert node.center is not None, "Internal node must have a center for axis comparison"
         left_first = query[node.axis] <= node.center[node.axis]
 
         if left_first:

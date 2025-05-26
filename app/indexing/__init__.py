@@ -2,7 +2,7 @@
 Vector indexing implementations for efficient similarity search.
 """
 
-from typing import List, Protocol, Tuple, TypeVar
+from typing import List, Protocol, Tuple, TypeVar, Any
 
 T = TypeVar("T")
 
@@ -10,11 +10,14 @@ T = TypeVar("T")
 class VectorIndex(Protocol[T]):
     """Protocol defining the interface for vector indexes."""
 
+    def __init__(self, dim: int, *args: Any, **kwargs: Any) -> None:
+        ...
+
     def add(self, id: T, embedding: List[float]) -> None:
         """Add a vector to the index."""
         ...
 
-    def build(self, embeddings: List[List[float]], ids: List[T] = None) -> None:
+    def build(self, embeddings: List[List[float]], ids: List[T] | None = None) -> None:
         """Build the index from a list of embeddings."""
         ...
 

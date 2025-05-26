@@ -3,9 +3,9 @@ Tests for the BallTreeCosine vector index.
 """
 
 import threading
-
 import numpy as np
 import pytest
+from typing import Dict, List, Tuple
 
 from app.indexing.ball_tree import BallTreeCosine, DuplicateVectorError
 from app.indexing.linear_search import LinearSearchCosine
@@ -14,12 +14,12 @@ from app.indexing.linear_search import LinearSearchCosine
 class TestBallTreeCosine:
     """Test suite for BallTreeCosine."""
 
-    def test_init(self):
+    def test_init(self) -> None:
         """Test initialization with dimension."""
         index = BallTreeCosine[str](dim=3)
         assert index.size() == 0
 
-    def test_dimension_validation(self):
+    def test_dimension_validation(self) -> None:
         """Test dimension validation."""
         index = BallTreeCosine[str](dim=3)
 
@@ -39,7 +39,7 @@ class TestBallTreeCosine:
                 [[1.0, 0.0, 0.0], [0.0, 1.0]], ["vec4", "vec5"]  # Wrong dimension
             )
 
-    def test_duplicate_id_handling(self):
+    def test_duplicate_id_handling(self) -> None:
         """Test duplicate ID handling."""
         index = BallTreeCosine[str](dim=3)
 
@@ -61,7 +61,7 @@ class TestBallTreeCosine:
         assert results[0][0] == "vec1"
         assert results[0][1] > 0.99  # Close to 1.0
 
-    def test_variance_split(self):
+    def test_variance_split(self) -> None:
         """Test variance-based splitting."""
         # Create vectors with high variance in y-axis
         vectors = [
@@ -91,7 +91,7 @@ class TestBallTreeCosine:
         top_idx = int(top_id.replace("vec", ""))
         assert top_idx >= 5, f"Expected a vector with positive y value, got {top_id}"
 
-    def test_search_correctness(self):
+    def test_search_correctness(self) -> None:
         """Test search correctness against LinearSearchCosine."""
         # Create random vectors
         np.random.seed(42)
@@ -128,7 +128,7 @@ class TestBallTreeCosine:
             for _, sim in ball_results:
                 assert -1.0 <= sim <= 1.0
 
-    def test_remove(self):
+    def test_remove(self) -> None:
         """Test vector removal."""
         index = BallTreeCosine[str](dim=3)
 
@@ -160,39 +160,42 @@ class TestBallTreeCosine:
         assert "x" in result_ids
         assert "z" in result_ids
 
-    def test_thread_safety(self):
+    def test_thread_safety(self) -> None:
         """Test thread safety."""
         index = BallTreeCosine[int](dim=3)
         n_threads, n_ops = 10, 50
-        errors = []
+        errors: List[Exception] = []
 
-        def worker(thread_id):
+        def worker(worker_id: int) -> None:
+            """Worker function for concurrency test."""
             try:
                 for i in range(n_ops):
-                    vec_id = thread_id * n_ops + i
-                    vector = [float(thread_id), float(i), 0.0]
+                    vec_id = worker_id * n_ops + i
+                    vector = [float(worker_id), float(i), 0.0]
                     index.add(vec_id, vector)
 
                     if i % 10 == 0:
                         index.build([], [])
                         try:
-                            index.query([float(thread_id), float(i), 0.0], k=5)
+                            index.query([float(worker_id), float(i), 0.0], k=5)
                         except RuntimeError:
                             pass  # Dirty index is expected sometimes
             except Exception as e:
                 errors.append(e)
 
         threads = [threading.Thread(target=worker, args=(i,)) for i in range(n_threads)]
-        [t.start() for t in threads]
-        [t.join() for t in threads]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
 
         assert not errors, f"Errors occurred during concurrent execution: {errors}"
         index.build([], [])
         assert index.size() == n_threads * n_ops
 
-    def test_metrics_callback(self):
+    def test_metrics_callback(self) -> None:
         """Test metrics callback."""
-        metrics = {}
+        metrics: Dict[str, List[float]] = {}
 
         def observer(op: str, duration_ms: float) -> None:
             metrics.setdefault(op, []).append(duration_ms)
@@ -201,7 +204,8 @@ class TestBallTreeCosine:
         index.add("vec1", [1.0, 0.0, 0.0])
         index.build([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], ["vec2", "vec3"])
         index.query([1.0, 0.0, 0.0])
-        index.remove("vec1")
+        index.remove("vec2") # Remove an ID that was part of the build, metric for "remove"
 
         for op in ["add", "build", "query", "remove"]:
-            assert op in metrics and len(metrics[op]) == 1
+            assert op in metrics, f"Metric for '{op}' not found"
+            assert len(metrics[op]) == 1, f"Metric for '{op}' not called exactly once"

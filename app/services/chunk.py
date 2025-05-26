@@ -53,10 +53,10 @@ class ChunkService:
         try:
             # Verify document exists and belongs to library
             # This will raise NotFoundError if document doesn't exist in the library
-            await self._repo.get_document(library_id, document_id)
+            document = await self._repo.get_document(library_id, document_id)
 
-            # Get chunks
-            chunks = await self._repo.list_chunks(document_id)
+            # Get chunks by accessing the document's chunks attribute
+            chunks = document.chunks
 
             self._metrics("list_chunks")
             return chunks
@@ -130,18 +130,21 @@ class ChunkService:
             NotFoundError: If the library, document, or chunk does not exist
         """
         try:
-            # Verify document exists and belongs to library
-            # This will raise NotFoundError if document doesn't exist in the library
             await self._repo.get_document(library_id, document_id)
 
-            # Get chunk
-            chunk = await self._repo.get_chunk(chunk_id)
-            if not chunk or chunk.document_id != document_id:
+            # Get chunk by passing all required IDs
+            chunk = await self._repo.get_chunk(library_id, document_id, chunk_id)
+            # The check `if not chunk or chunk.document_id != document_id:`
+            # might be redundant if repo.get_chunk already ensures this, 
+            # but it's good for defense. With document_id now in Chunk, this check is valid.
+            if not chunk: # repo.get_chunk raises NotFoundError, so this might not be strictly needed
                 raise NotFoundError(
                     f"Chunk {chunk_id} not found in document {document_id}",
                     "Chunk",
                     chunk_id,
                 )
+            # Ensure chunk.document_id matches, if repo doesn't guarantee it
+            # (InMemoryRepo.get_chunk does seem to guarantee it by finding it within the specific document)
 
             self._metrics("get_chunk")
             return chunk
@@ -183,8 +186,8 @@ class ChunkService:
             document_id=document_id,
         )
 
-        # Update in repository
-        await self._repo.update_chunk(new_chunk)
+        # Update in repository by passing all required IDs and the updated chunk object
+        await self._repo.update_chunk(library_id, document_id, chunk_id, new_chunk)
 
         self._metrics("update_chunk")
         return new_chunk
@@ -206,8 +209,8 @@ class ChunkService:
         # Verify chunk exists in the document in the library
         await self.get_chunk(library_id, document_id, chunk_id)
 
-        # Delete chunk
-        await self._repo.delete_chunk(chunk_id)
+        # Delete chunk by passing all required IDs
+        await self._repo.delete_chunk(library_id, document_id, chunk_id)
 
         self._metrics("delete_chunk")
 

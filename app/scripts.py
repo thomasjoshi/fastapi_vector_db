@@ -9,26 +9,26 @@ import sys
 from pathlib import Path
 
 
-def start():
+def start() -> None:
     """Start the FastAPI application in production mode."""
     import uvicorn
 
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000)
 
 
-def dev():
+def dev() -> None:
     """Start the FastAPI application in development mode with auto-reload."""
     import uvicorn
 
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
 
 
-def lint():
+def lint() -> None:
     """Run linting checks on the codebase."""
     subprocess.run(["ruff", "check", "."], cwd=Path(__file__).parent.parent)
 
 
-def format():
+def format() -> None:
     """Format the codebase using black and ruff."""
     repo_root = Path(__file__).parent.parent
     print("Running black...")
@@ -38,7 +38,7 @@ def format():
     subprocess.run(["ruff", "check", ".", "--fix"], cwd=repo_root)
 
 
-def test():
+def test() -> None:
     """Run the test suite."""
     import pytest
 

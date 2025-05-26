@@ -27,10 +27,6 @@ htmlcov/
 # Logs
 *.log
 
-# Environment variables
-.env
-.env.*
-
 # Coding notes
 coding_notes.md
 

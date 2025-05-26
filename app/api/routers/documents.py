@@ -23,7 +23,7 @@ async def create_document(
     library_id: UUID,
     document_data: DocumentCreate,
     service: Annotated[DocumentService, Depends(get_document_service)],
-):
+) -> DocumentRead:
     """Create a new document in a library."""
     from loguru import logger
 
@@ -49,7 +49,7 @@ async def get_document(
     library_id: UUID,
     document_id: UUID,
     service: Annotated[DocumentService, Depends(get_document_service)],
-):
+) -> DocumentRead:
     """Get a document by ID."""
     result = await service.get_document(library_id, document_id)
     return DocumentRead(id=result.id, metadata=result.metadata)
@@ -64,7 +64,7 @@ async def update_document(
     document_id: UUID,
     document_data: DocumentCreate,
     service: Annotated[DocumentService, Depends(get_document_service)],
-):
+) -> None:
     """Update a document."""
     document = Document(chunks=[], metadata=document_data.metadata)
     await service.update_document(library_id, document_id, document)
@@ -78,6 +78,6 @@ async def delete_document(
     library_id: UUID,
     document_id: UUID,
     service: Annotated[DocumentService, Depends(get_document_service)],
-):
+) -> None:
     """Delete a document."""
     await service.delete_document(library_id, document_id)

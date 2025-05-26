@@ -9,6 +9,8 @@ from app.domain.models import Chunk, Document, Library
 from app.main import app
 from app.repos.in_memory import _repo
 from tests.test_search import create_test_library
+from uuid import UUID
+from app.services.search import SearchService
 
 # Create a test client with a shared repository instance
 # Reset the repository before each test
@@ -176,7 +178,7 @@ async def test_document_chunk_search_flow_async() -> None:
     library_service = LibraryService(repo)
     document_service = DocumentService(repo)
     chunk_service = ChunkService(repo)
-    search_service = SearchService(repo)
+    search_service: SearchService[UUID] = SearchService(repo)
 
     # Create a library directly using the service
     lib = Library.example()
@@ -197,6 +199,7 @@ async def test_document_chunk_search_flow_async() -> None:
         embedding[i] = 1.0  # Set one-hot encoding
 
         chunk = Chunk(
+            document_id=doc_id,
             text=f"This is chunk {i}",
             metadata={"position": str(i)},  # Metadata values must be strings
             embedding=embedding,
@@ -253,7 +256,7 @@ async def test_document_chunk_search_flow() -> None:
     library_service = LibraryService(repo)
     document_service = DocumentService(repo)
     chunk_service = ChunkService(repo)
-    search_service = SearchService(repo)
+    search_service: SearchService[UUID] = SearchService(repo)
 
     # Create a library directly using the service
     lib = Library.example()
@@ -274,6 +277,7 @@ async def test_document_chunk_search_flow() -> None:
         embedding[i] = 1.0  # Set one-hot encoding
 
         chunk = Chunk(
+            document_id=doc_id,
             text=f"This is chunk {i}",
             metadata={"position": str(i)},  # Metadata values must be strings
             embedding=embedding,
@@ -333,7 +337,7 @@ async def test_dimension_mismatch() -> None:
     await repo.add_library(library)
 
     # Create search service and index the library
-    search_service = SearchService(repo)
+    search_service: SearchService[UUID] = SearchService(repo)
     await search_service.index_library(library.id)
 
     # Try to search with wrong dimension (should be 3, using 5)

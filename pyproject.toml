@@ -43,4 +43,15 @@ fix = true
 [tool.mypy]
 python_version = "3.11"
 strict = true
-exclude = ["tests/"]
+packages = ["app", "tests", "scripts"]
+warn_unused_configs = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_optional = true
+warn_unreachable = true
+namespace_packages = true
+plugins = "pydantic.mypy"
+
+[[tool.mypy.overrides]]
+module = "tomlkit"
+ignore_missing_imports = true

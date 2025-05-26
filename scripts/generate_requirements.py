@@ -4,13 +4,13 @@ Script to generate requirements.txt from pyproject.toml
 This script extracts dependencies from pyproject.toml and writes them
 to requirements.txt for use in Docker builds.
 """
+import os
 import sys
 from pathlib import Path
 
 import tomlkit
 
-
-def generate_requirements(pyproject_path, output_path):
+def generate_requirements(pyproject_path: Path, output_path: Path) -> None:
     """Generate requirements.txt from pyproject.toml"""
     # Read pyproject.toml
     with open(pyproject_path) as f:

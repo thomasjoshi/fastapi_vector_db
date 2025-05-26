@@ -10,8 +10,8 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
-from uuid import UUID
+from typing import Any, Dict, Optional, Callable, List
+from uuid import UUID, uuid4
 
 from loguru import logger
 from pydantic import BaseModel
@@ -50,7 +50,7 @@ class Persistence:
         )
         self.persistence_enabled = settings.ENABLE_PERSISTENCE
         self.persistence_interval = settings.PERSISTENCE_INTERVAL
-        self._save_task: Optional[asyncio.Task] = None
+        self._save_task: Optional[asyncio.Task[None]] = None
 
     async def save_to_disk(self, libraries: Dict[UUID, Library]) -> bool:
         """
@@ -118,7 +118,8 @@ class Persistence:
                     chunks = []
                     for chunk_data in doc_data.get("chunks", []):
                         chunk = Chunk(
-                            id=UUID(chunk_data["id"]) if "id" in chunk_data else None,
+                            id=UUID(chunk_data["id"]) if "id" in chunk_data else uuid4(),
+                            document_id=UUID(doc_data["id"]),
                             text=chunk_data["text"],
                             embedding=chunk_data["embedding"],
                             metadata=chunk_data.get("metadata", {}),
@@ -126,7 +127,7 @@ class Persistence:
                         chunks.append(chunk)
 
                     document = Document(
-                        id=UUID(doc_data["id"]) if "id" in doc_data else None,
+                        id=UUID(doc_data["id"]) if "id" in doc_data else uuid4(),
                         chunks=chunks,
                         metadata=doc_data.get("metadata", {}),
                     )
@@ -146,7 +147,7 @@ class Persistence:
             logger.error(f"Error loading database from disk: {e}")
             return {}
 
-    async def start_auto_save(self, get_libraries_func) -> None:
+    async def start_auto_save(self, get_libraries_func: Callable[[], Dict[UUID, Library]]) -> None:
         """
         Start the auto-save background task.
 
@@ -157,7 +158,7 @@ class Persistence:
             logger.info("Auto-save is disabled")
             return
 
-        async def auto_save_task():
+        async def auto_save_task() -> None:
             try:
                 while True:
                     await asyncio.sleep(self.persistence_interval)

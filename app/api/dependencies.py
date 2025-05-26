@@ -11,6 +11,7 @@ from app.services.chunk import ChunkService
 from app.services.document import DocumentService
 from app.services.library import LibraryService, MetricsCallback, noop_metrics_callback
 from app.services.search import SearchService
+from uuid import UUID
 
 # Singleton instances for the application lifetime
 _repo = InMemoryRepo()
@@ -85,7 +86,7 @@ def get_chunk_service(
 
 def get_search_service(
     repo: Annotated[InMemoryRepo, Depends(get_repo)],
-) -> SearchService:
+) -> SearchService[UUID]:
     """
     Get a search service instance.
 

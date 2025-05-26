@@ -33,7 +33,7 @@ class LibraryRead(LibraryBase):
     id: UUID = Field(..., description="Unique identifier for the library")
 
 
-class LibraryUpdate(LibraryBase):
+class LibraryUpdate(BaseModel):
     """Schema for updating a library."""
 
     # All fields are optional for PATCH operations

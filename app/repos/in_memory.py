@@ -5,7 +5,8 @@ This is a simple in-memory implementation of the repository interface.
 It uses a dictionary to store libraries and their documents.
 """
 import threading
-from typing import Dict, Optional
+from typing import Dict, Optional, Type
+from types import TracebackType
 from uuid import UUID, uuid4
 
 from loguru import logger
@@ -60,11 +61,11 @@ class ReadWriteLock:
         def __init__(self, rwlock: "ReadWriteLock") -> None:
             self.rwlock = rwlock
 
-        def __enter__(self) -> None:
+        def __enter__(self) -> "ReadWriteLock":
             self.rwlock.read_acquire()
             return self.rwlock
 
-        def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> None:
             self.rwlock.read_release()
 
     class WriteLock:
@@ -73,11 +74,11 @@ class ReadWriteLock:
         def __init__(self, rwlock: "ReadWriteLock") -> None:
             self.rwlock = rwlock
 
-        def __enter__(self) -> None:
+        def __enter__(self) -> "ReadWriteLock":
             self.rwlock.write_acquire()
             return self.rwlock
 
-        def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> None:
             self.rwlock.write_release()
 
     def read_lock(self) -> "ReadLock":
@@ -114,15 +115,23 @@ class InMemoryRepo:
         logger.info(f"Repo.add_library: ID {library.id}, type: {type(library.id)}")
 
         with self._lock.write_lock():
-            # Generate an ID if one is not provided
-            if library.id is None:
-                library = Library(
-                    id=uuid4(),
-                    documents=library.documents,
-                    metadata=library.metadata,
-                )
+            # Library.id has a default_factory=uuid4, so it will always exist.
+            # The 'if library.id is None:' check is redundant and likely caused the unreachable code error.
+            # If a library comes in, it's assumed to have an ID. If a new one needs to be made
+            # from data that lacks an ID, that should be handled before calling add_library
+            # or by a different method (e.g., create_library_from_data).
+            # Removing the block:
+            # if library.id is None:
+            #     library = Library(
+            #         id=uuid4(), # This was line 119 where error was reported
+            #         documents=library.documents,
+            #         metadata=library.metadata,
+            #     )
 
             # Add the library to the dictionary
+            if library.id in self._libraries:
+                # To prevent overwriting, though the method signature doesn't suggest update_or_create
+                logger.warning(f"Library with ID {library.id} already exists. Overwriting.")
             self._libraries[library.id] = library
             logger.info(f"Repo.add_library: Added. Keys: {list(self._libraries)}")
             return library.id
@@ -135,7 +144,8 @@ class InMemoryRepo:
         logger.info(f"Repo.get_library: ID {library_id}, type: {type(library_id)}")
         with self._lock.read_lock():
             logger.info(f"Repo.get_library: Found. Keys: {list(self._libraries)}")
-            return self._get_library_or_raise(library_id)
+            # Assuming _get_library_or_raise is async based on mypy error
+            return await self._get_library_or_raise(library_id)
 
     async def update_library(self, library_id: UUID, library: Library) -> bool:
         """

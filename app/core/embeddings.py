@@ -5,9 +5,10 @@ This module provides functions to generate embeddings from text
 using the Cohere API.
 """
 
-from typing import List, Optional
+from typing import cast, List, Optional
+from typing_extensions import Literal
 
-import cohere
+import cohere  # type: ignore[import-untyped]
 from loguru import logger
 
 from app.core.config import settings
@@ -60,12 +61,14 @@ class EmbeddingGenerator:
             )
 
             # Extract embeddings from response
-            embeddings = response.embeddings
+            embeddings_data = response.embeddings
+            # Assure mypy of the type from the untyped library
+            typed_embeddings = cast(List[List[float]], embeddings_data)
 
             logger.info(
-                f"Generated {len(embeddings)} embeddings using model {self.model}"
+                f"Generated {len(typed_embeddings)} embeddings using model {self.model}"
             )
-            return embeddings
+            return typed_embeddings
         except Exception as e:
             logger.error(f"Cohere API error generating embeddings: {str(e)}")
             # Return empty embeddings in case of error

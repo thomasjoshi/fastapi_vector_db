@@ -63,6 +63,7 @@ async def create_chunk_with_embedding(
 
     # Create the chunk with the generated embedding
     chunk = Chunk(
+        document_id=document_id,
         text=chunk_data.text,
         embedding=embedding,
         metadata=chunk_data.metadata,
@@ -91,9 +92,10 @@ async def create_chunk(
     document_id: UUID,
     chunk_data: ChunkCreate,
     service: ChunkService = chunk_service_dep,
-):
+) -> ChunkRead:
     """Create a new chunk in a document."""
     chunk = Chunk(
+        document_id=document_id,
         text=chunk_data.text,
         embedding=chunk_data.embedding,
         metadata=chunk_data.metadata,
@@ -116,7 +118,7 @@ async def get_chunk(
     document_id: UUID,
     chunk_id: UUID,
     service: ChunkService = chunk_service_dep,
-):
+) -> ChunkRead:
     """Get a chunk by ID."""
     result = await service.get_chunk(library_id, document_id, chunk_id)
     return ChunkRead(
@@ -137,9 +139,11 @@ async def update_chunk(
     chunk_id: UUID,
     chunk_data: ChunkCreate,
     service: ChunkService = chunk_service_dep,
-):
+) -> None:
     """Update a chunk."""
     chunk = Chunk(
+        id=chunk_id,
+        document_id=document_id,
         text=chunk_data.text,
         embedding=chunk_data.embedding,
         metadata=chunk_data.metadata,
@@ -156,6 +160,6 @@ async def delete_chunk(
     document_id: UUID,
     chunk_id: UUID,
     service: ChunkService = chunk_service_dep,
-):
+) -> None:
     """Delete a chunk."""
     await service.delete_chunk(library_id, document_id, chunk_id)

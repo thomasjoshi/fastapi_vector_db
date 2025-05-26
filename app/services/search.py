@@ -4,10 +4,13 @@ Search service for vector similarity search.
 
 import threading
 import time
-from typing import Any, Dict, Generic, List, Tuple, Type, TypeVar
+from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar
 from uuid import UUID
 
+from loguru import logger
+
 from app.domain.models import Chunk
+from app.indexing import VectorIndex
 from app.indexing.linear_search import LinearSearchCosine
 from app.repos.in_memory import InMemoryRepo
 from app.services.exceptions import ValidationError
@@ -28,7 +31,7 @@ class SearchService(Generic[T]):
     """
 
     def __init__(
-        self, repo: InMemoryRepo, index_class: Type = LinearSearchCosine
+        self, repo: InMemoryRepo, index_class: Type[VectorIndex[UUID]] = LinearSearchCosine
     ) -> None:
         """
         Initialize the search service.
@@ -192,7 +195,7 @@ class SearchService(Generic[T]):
         library_id: UUID,
         embedding: List[float],
         k: int = 5,
-        metadata_filters: Dict[str, str] = None,
+        metadata_filters: Optional[Dict[str, str]] = None,
     ) -> List[Tuple[Chunk, float]]:
         """
         Search for similar chunks in a library.
@@ -293,8 +296,36 @@ class SearchService(Generic[T]):
             if library_id in _indices:
                 del _indices[library_id]
 
-            # Index the library
-            return await self.index_library(library_id)
+            # Verify library exists and get its chunks
+            library = await self._repo.get_library(library_id)
+            
+            all_chunks_with_embeddings = []
+            for doc in library.documents:
+                for chunk in doc.chunks:
+                    if chunk.embedding:
+                        all_chunks_with_embeddings.append(chunk)
+
+            if not all_chunks_with_embeddings:
+                logger.warning(f"Library {library_id} has no embeddings to index or reindex.")
+                # If an old index was removed, and there's nothing new, effectively it's an empty index state
+                return 0
+
+            # Determine dimension from the first available embedding
+            dim = len(all_chunks_with_embeddings[0].embedding)
+            index = self._index_class(dim=dim)
+
+            embeddings_to_build = [c.embedding for c in all_chunks_with_embeddings]
+            ids_to_build = [c.id for c in all_chunks_with_embeddings]
+
+            # Build the index
+            logger.info(f"Building index for library {library_id} with {len(embeddings_to_build)} embeddings of dimension {dim}")
+            index.build(embeddings=embeddings_to_build, ids=ids_to_build)
+            _indices[library_id] = index
+            logger.info(
+                f"Successfully built index for library {library_id} with {len(embeddings_to_build)} embeddings"
+            )
+
+            return len(embeddings_to_build)
 
     def _metrics(self, name: str, duration_ms: float) -> None:
         # Implement metrics logging here

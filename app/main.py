@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from loguru import logger
+from typing import Dict, Any
 
 from app.api.routers import chunks, documents, libraries, search
 from app.core.config import settings
@@ -15,7 +16,7 @@ app = FastAPI(
 
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """Initialize the application on startup."""
     logger.info("Initializing repository with persistence...")
     await initialize_repo()
@@ -23,7 +24,7 @@ async def startup_event():
 
 
 @app.on_event("shutdown")
-async def shutdown_event():
+async def shutdown_event() -> None:
     """Cleanup on application shutdown."""
     logger.info("Shutting down, saving data...")
     persistence = get_persistence()
@@ -79,7 +80,7 @@ app.include_router(search.router)
 
 
 @app.get("/health", tags=["health"])
-async def health_check() -> dict:
+async def health_check() -> Dict[str, str]:
     """
     Health check endpoint.
     Returns a simple status message.

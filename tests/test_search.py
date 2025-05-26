@@ -3,7 +3,8 @@ Tests for search functionality.
 """
 
 import asyncio
-from uuid import uuid4
+from uuid import UUID, uuid4
+from typing import List, Tuple
 
 import pytest
 
@@ -12,13 +13,15 @@ from app.indexing.ball_tree import BallTreeCosine
 from app.indexing.linear_search import LinearSearchCosine
 from app.repos.in_memory import InMemoryRepo
 from app.services.search import SearchService
-
+from app.services.exceptions import ValidationError
 
 def create_test_library() -> Library:
     """Create a test library with documents and chunks."""
+    doc_id = uuid4()  # Generate document ID once
     # Create chunks with different embeddings
     chunk1 = Chunk(
         id=uuid4(),
+        document_id=doc_id, # Use the generated doc_id
         text="This is the first chunk",
         embedding=[1.0, 0.0, 0.0],  # pointing along x-axis
         metadata={"page": "1"},
@@ -26,6 +29,7 @@ def create_test_library() -> Library:
 
     chunk2 = Chunk(
         id=uuid4(),
+        document_id=doc_id, # Use the generated doc_id
         text="This is the second chunk",
         embedding=[0.0, 1.0, 0.0],  # pointing along y-axis
         metadata={"page": "2"},
@@ -33,6 +37,7 @@ def create_test_library() -> Library:
 
     chunk3 = Chunk(
         id=uuid4(),
+        document_id=doc_id, # Use the generated doc_id
         text="This is the third chunk",
         embedding=[0.0, 0.0, 1.0],  # pointing along z-axis
         metadata={"page": "3"},
@@ -40,7 +45,7 @@ def create_test_library() -> Library:
 
     # Create a document with these chunks
     document = Document(
-        id=uuid4(),
+        id=doc_id, # Use the generated doc_id
         chunks=[chunk1, chunk2, chunk3],
         metadata={"title": "Test Document"},
     )
@@ -56,7 +61,7 @@ def create_test_library() -> Library:
 
 
 @pytest.mark.asyncio
-async def test_brute_force_search():
+async def test_brute_force_search() -> None:
     """Test LinearSearchCosine search."""
     # Create repo and add a library
     repo = InMemoryRepo()
@@ -64,7 +69,7 @@ async def test_brute_force_search():
     await repo.add_library(library)
 
     # Create search service with LinearSearchCosine
-    search_service = SearchService(repo, LinearSearchCosine)
+    search_service: SearchService[UUID] = SearchService(repo, LinearSearchCosine)
 
     # Index the library
     chunks_indexed = await search_service.index_library(library.id)
@@ -82,7 +87,7 @@ async def test_brute_force_search():
 
 
 @pytest.mark.asyncio
-async def test_ball_tree_search():
+async def test_ball_tree_search() -> None:
     """Test BallTreeCosine search."""
     # Create repo and add a library
     repo = InMemoryRepo()
@@ -90,7 +95,7 @@ async def test_ball_tree_search():
     await repo.add_library(library)
 
     # Create search service with BallTreeCosine
-    search_service = SearchService(repo, BallTreeCosine)
+    search_service: SearchService[UUID] = SearchService(repo, BallTreeCosine)
 
     # Index the library
     chunks_indexed = await search_service.index_library(library.id)
@@ -108,7 +113,7 @@ async def test_ball_tree_search():
 
 
 @pytest.mark.asyncio
-async def test_search_not_indexed():
+async def test_search_not_indexed() -> None:
     """Test searching a library that hasn't been indexed."""
     # Create repo and add a library
     repo = InMemoryRepo()
@@ -116,15 +121,15 @@ async def test_search_not_indexed():
     await repo.add_library(library)
 
     # Create search service
-    search_service = SearchService(repo, LinearSearchCosine)
+    search_service: SearchService[UUID] = SearchService(repo, LinearSearchCosine)
 
     # Try to query without indexing first
-    with pytest.raises(KeyError):
+    with pytest.raises(ValidationError):
         await search_service.query(library.id, [1.0, 0.0, 0.0], k=3)
 
 
 @pytest.mark.asyncio
-async def test_concurrent_index_search():
+async def test_concurrent_index_search() -> None:
     """Test concurrent indexing and searching with asyncio tasks."""
     # Create repo and add a library
     repo = InMemoryRepo()
@@ -132,19 +137,21 @@ async def test_concurrent_index_search():
     await repo.add_library(library)
 
     # Create search service
-    search_service = SearchService(repo, LinearSearchCosine)
+    search_service: SearchService[UUID] = SearchService(repo, LinearSearchCosine)
 
     # Create tasks for concurrent indexing and searching
-    async def index_task():
+    async def index_task() -> int:
         return await search_service.index_library(library.id)
 
-    async def search_task():
+    async def search_task() -> List[Chunk]:
         # Small delay to ensure indexing starts first
         await asyncio.sleep(0.01)
         try:
             return await search_service.query(library.id, [1.0, 0.1, 0.1], k=3)
+        except KeyError:
+            return []
         except Exception as e:
-            return e
+            raise e
 
     # Run both tasks concurrently
     index_task_obj = asyncio.create_task(index_task())
@@ -155,7 +162,48 @@ async def test_concurrent_index_search():
     search_results = await search_task_obj
 
     # Verify results
-    assert index_result == 3  # Number of chunks indexed
-    assert isinstance(search_results, list)  # Should not be an exception
+    assert index_result == 3
+    assert isinstance(search_results, list)
     assert len(search_results) == 3
-    assert search_results[0].text == "This is the first chunk"
+    if search_results:
+        assert search_results[0].text == "This is the first chunk"
+
+
+@pytest.mark.asyncio
+async def test_reindex_library() -> None:
+    """Test re-indexing a library after changes."""
+    repo = InMemoryRepo()
+    library = create_test_library()
+    await repo.add_library(library)
+
+    search_service: SearchService[UUID] = SearchService(repo, LinearSearchCosine)
+
+    # Initial indexing
+    initial_chunks_indexed = await search_service.index_library(library.id)
+    assert initial_chunks_indexed == 3
+
+    # Query before re-indexing
+    query_embedding = [0.9, 0.1, 0.0]  
+    results_before_reindex = await search_service.query(library.id, query_embedding, k=1)
+    assert len(results_before_reindex) == 1
+
+    # Add a new chunk to the library that is very similar to the query
+    new_chunk_doc_id = library.documents[0].id
+    new_chunk = Chunk(
+        id=uuid4(),
+        document_id=new_chunk_doc_id, # Use the ID of the first document in the library
+        text="This is a new very similar chunk",
+        embedding=[0.95, 0.05, 0.0],
+        metadata={"page": "new"},
+    )
+    library.documents[0].chunks.append(new_chunk)
+    await repo.update_library(library.id, library) 
+
+    # Re-index the library
+    reindexed_chunks = await search_service.reindex_library(library.id)
+    assert reindexed_chunks == 4 
+
+    # Query after re-indexing
+    results_after_reindex = await search_service.query(library.id, query_embedding, k=1)
+    assert len(results_after_reindex) == 1
+    assert results_after_reindex[0].id == new_chunk.id

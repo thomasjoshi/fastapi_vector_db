@@ -4,6 +4,7 @@ Tests for the LinearSearchCosine vector index.
 
 import threading
 import time
+from typing import Dict, List
 
 import numpy as np
 import pytest
@@ -14,12 +15,12 @@ from app.indexing.linear_search import DuplicateVectorError, LinearSearchCosine
 class TestLinearSearchCosine:
     """Test suite for LinearSearchCosine."""
 
-    def test_init(self):
+    def test_init(self) -> None:
         """Test initialization with dimension."""
         index = LinearSearchCosine[str](dim=3)
         assert index.size() == 0
 
-    def test_dimension_validation(self):
+    def test_dimension_validation(self) -> None:
         """Test dimension validation."""
         index = LinearSearchCosine[str](dim=3)
 
@@ -39,7 +40,7 @@ class TestLinearSearchCosine:
                 [[1.0, 0.0, 0.0], [0.0, 1.0]], ["vec4", "vec5"]  # Wrong dimension
             )
 
-    def test_duplicate_id_handling(self):
+    def test_duplicate_id_handling(self) -> None:
         """Test duplicate ID handling."""
         index = LinearSearchCosine[str](dim=3)
 
@@ -59,7 +60,7 @@ class TestLinearSearchCosine:
         assert results[0][0] == "vec1"
         assert results[0][1] > 0.99  # Close to 1.0
 
-    def test_vectorized_query(self):
+    def test_vectorized_query(self) -> None:
         """Test vectorized query implementation."""
         # Create test vectors
         vectors = [
@@ -93,13 +94,13 @@ class TestLinearSearchCosine:
         assert len(results) == 2
         assert results[0][0] == "x"
 
-    def test_thread_safety(self):
+    def test_thread_safety(self) -> None:
         """Test thread safety."""
         index = LinearSearchCosine[int](dim=3)
         n_threads, n_ops = 10, 100
         errors = []
 
-        def worker(thread_id):
+        def worker(thread_id: int) -> None:
             try:
                 for i in range(n_ops):
                     vec_id = thread_id * n_ops + i
@@ -110,15 +111,17 @@ class TestLinearSearchCosine:
                 errors.append(e)
 
         threads = [threading.Thread(target=worker, args=(i,)) for i in range(n_threads)]
-        [t.start() for t in threads]
-        [t.join() for t in threads]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
 
         assert not errors, f"Errors occurred during concurrent execution: {errors}"
         assert index.size() == n_threads * n_ops
 
-    def test_metrics_callback(self):
+    def test_metrics_callback(self) -> None:
         """Test metrics callback."""
-        metrics = {}
+        metrics: Dict[str, List[float]] = {}
 
         def observer(op: str, duration_ms: float) -> None:
             metrics.setdefault(op, []).append(duration_ms)
@@ -131,7 +134,7 @@ class TestLinearSearchCosine:
         for op in ["add", "build", "query"]:
             assert op in metrics and len(metrics[op]) == 1
 
-    def test_bulk_build_optimization(self):
+    def test_bulk_build_optimization(self) -> None:
         """Test bulk build optimization."""
         n_vectors, dim = 1000, 10
         np.random.seed(42)

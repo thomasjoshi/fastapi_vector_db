@@ -9,6 +9,7 @@ __all__ = ["Chunk", "Document", "Library"]
 
 class Chunk(BaseModel):
     id: UUID = Field(default_factory=uuid4)
+    document_id: UUID
     text: str
     embedding: List[float]
     metadata: Dict[str, str] = {}
@@ -19,6 +20,7 @@ class Chunk(BaseModel):
     def serialize_model(self) -> Dict[str, Any]:
         return {
             "id": str(self.id).replace("-", ""),  # UUID without dashes
+            "document_id": str(self.document_id).replace("-", ""),  # UUID without dashes
             "text": self.text,
             "embedding": self.embedding,
             "metadata": self.metadata,
@@ -61,11 +63,13 @@ class Library(BaseModel):
         # Create a small example library with sample data
         chunks1 = [
             Chunk(
+                document_id=uuid4(),
                 text="This is the first chunk of document 1.",
                 embedding=[random.random() for _ in range(5)],
                 metadata={"source": "example", "page": "1"},
             ),
             Chunk(
+                document_id=uuid4(),
                 text="This is the second chunk of document 1.",
                 embedding=[random.random() for _ in range(5)],
                 metadata={"source": "example", "page": "1"},
@@ -74,6 +78,7 @@ class Library(BaseModel):
 
         chunks2 = [
             Chunk(
+                document_id=uuid4(),
                 text="This is the first chunk of document 2.",
                 embedding=[random.random() for _ in range(5)],
                 metadata={"source": "example", "page": "2"},

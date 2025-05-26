@@ -25,7 +25,7 @@ router = APIRouter(tags=["search"])
 @router.post("/libraries/{library_id}/index", response_model=IndexResponse)
 async def index_library(
     library_id: UUID,
-    service: Annotated[SearchService, Depends(get_search_service)],
+    service: Annotated[SearchService[UUID], Depends(get_search_service)],
 ) -> IndexResponse:
     """
     Index a library for vector search.
@@ -64,7 +64,7 @@ async def index_library(
 async def search_library(
     library_id: UUID,
     query: SearchQuery,
-    service: Annotated[SearchService, Depends(get_search_service)],
+    service: Annotated[SearchService[UUID], Depends(get_search_service)],
 ) -> SearchResponse:
     """
     Search for similar chunks in a library.

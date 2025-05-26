@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     COHERE_API_KEY: Optional[str] = Field(None, description="Cohere API Key")
     COHERE_EMBEDDING_MODEL: str = "embed-english-v3.0"  # Default model
 
-    model_config = {"env_prefix": "APP_"}
+    model_config = {}
 
 
 settings = Settings()
