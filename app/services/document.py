@@ -61,9 +61,7 @@ class DocumentService:
             return documents
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            self._metrics(
-                "list_documents_error", duration_ms=duration_ms
-            )
+            self._metrics("list_documents_error", duration_ms=duration_ms)
             raise NotFoundError(
                 f"Library with ID {library_id} not found", "Library", library_id
             ) from e
@@ -92,9 +90,7 @@ class DocumentService:
             return document
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
-            self._metrics(
-                "add_document_error", duration_ms=duration_ms
-            )
+            self._metrics("add_document_error", duration_ms=duration_ms)
             raise NotFoundError(
                 f"Library with ID {library_id} not found", "Library", library_id
             ) from e

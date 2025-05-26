@@ -41,7 +41,7 @@ async def create_library(
 
     # Get the complete library after creation
     created_library = await library_service.get_library(library_id)
-    
+
     # Return the library with its ID
     return LibraryRead(
         id=created_library.id,

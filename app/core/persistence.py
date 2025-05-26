@@ -46,9 +46,7 @@ class Persistence:
             persistence_path: Path to save data. If None, uses config setting.
         """
         self.persistence_path = (
-            persistence_path
-            or settings.PERSISTENCE_PATH
-            or "./data/vector_db.json"
+            persistence_path or settings.PERSISTENCE_PATH or "./data/vector_db.json"
         )
         self.persistence_enabled = settings.ENABLE_PERSISTENCE
         self.persistence_interval = settings.PERSISTENCE_INTERVAL
@@ -83,7 +81,7 @@ class Persistence:
 
             # Rename to the actual file (atomic operation on most filesystems)
             os.replace(temp_path, self.persistence_path)
-            
+
             logger.info(f"Saved database to {self.persistence_path}")
             return True
         except Exception as e:

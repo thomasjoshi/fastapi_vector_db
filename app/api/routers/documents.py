@@ -33,10 +33,10 @@ async def create_document(
 
     # Create a document with metadata from the request
     document = Document(chunks=[], metadata=document_data.metadata)
-    
+
     # Add the document to the library
     result = await service.add_document(library_id, document)
-    
+
     # Return the document with consistent ID formatting
     return DocumentRead(id=result.id, metadata=result.metadata)
 

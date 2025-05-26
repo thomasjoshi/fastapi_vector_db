@@ -51,17 +51,17 @@ def benchmark_index(
 ) -> Dict[str, Any]:
     """Benchmark a vector index implementation."""
     print(f"Benchmarking {name}...")
-    
+
     # Generate IDs
     ids = [uuid4() for _ in range(len(vectors))]
-    
+
     # Measure build time
     start_time = time.time()
     index = index_class()
     index.build(vectors, ids)
     build_time = time.time() - start_time
     print(f"  Build time: {build_time:.4f} seconds")
-    
+
     # Measure query time
     query_times = []
     for query in query_vectors:
@@ -69,10 +69,10 @@ def benchmark_index(
         _results = index.query(query, k=k)
         query_time = time.time() - start_time
         query_times.append(query_time)
-    
+
     avg_query_time = sum(query_times) / len(query_times)
     print(f"  Average query time: {avg_query_time:.6f} seconds")
-    
+
     return {
         "name": name,
         "build_time": build_time,
@@ -86,15 +86,15 @@ def run_benchmarks() -> None:
     vector_count = 10000
     query_count = 100
     k = 10
-    
+
     results: List[Dict[str, Any]] = []
-    
+
     for dimensions in dimensions_list:
         print(f"\nBenchmarking with {dimensions} dimensions:")
         # Generate vectors
         vectors = generate_random_vectors(vector_count, dimensions)
         query_vectors = generate_random_vectors(query_count, dimensions, seed=43)
-        
+
         # Benchmark LinearSearchCosine
         brute_results = benchmark_index(
             f"LinearSearchCosine ({dimensions}D)",
@@ -104,7 +104,7 @@ def run_benchmarks() -> None:
             k,
         )
         results.append(brute_results)
-        
+
         # Benchmark BallTreeCosine
         ball_results = benchmark_index(
             f"BallTreeCosine ({dimensions}D)",
@@ -114,7 +114,7 @@ def run_benchmarks() -> None:
             k,
         )
         results.append(ball_results)
-    
+
     # Print summary
     print("\nSummary:")
     print("-" * 80)

@@ -22,8 +22,8 @@ class ChunkCreateWithEmbedding(BaseModel):
     text: str
     metadata: Dict[str, str] = Field(default_factory=dict)
     generate_embedding: bool = Field(
-        default=True, 
-        description="Whether to generate an embedding from the text using Cohere API"
+        default=True,
+        description="Whether to generate an embedding from the text using Cohere API",
     )
 
 
@@ -47,8 +47,7 @@ class SearchQuery(BaseModel):
     embedding: List[float]
     k: int = Field(default=5, ge=1, le=100)
     metadata_filters: Dict[str, str] = Field(
-        default_factory=dict, 
-        description="Metadata filters to apply to search results"
+        default_factory=dict, description="Metadata filters to apply to search results"
     )
 
 

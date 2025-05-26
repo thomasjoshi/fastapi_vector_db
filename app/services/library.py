@@ -157,9 +157,7 @@ class LibraryService:
         except Exception as e:
             logger.error(f"Error updating library {library_id}: {e}")
             duration_ms = (time.time() - start_time) * 1000
-            self._metrics(
-                "library.update_error", duration_ms=duration_ms
-            )
+            self._metrics("library.update_error", duration_ms=duration_ms)
             raise
 
     async def delete_library(self, library_id: UUID) -> None:
@@ -191,7 +189,5 @@ class LibraryService:
         except Exception as e:
             logger.error(f"Error deleting library {library_id}: {e}")
             duration_ms = (time.time() - start_time) * 1000
-            self._metrics(
-                "library.delete_error", duration_ms=duration_ms
-            )
+            self._metrics("library.delete_error", duration_ms=duration_ms)
             raise

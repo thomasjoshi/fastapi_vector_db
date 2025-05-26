@@ -34,7 +34,7 @@ async def index_library(
     enabling efficient similarity search.
     """
     from loguru import logger
-    
+
     try:
         logger.info(f"Starting indexing for library {library_id}")
         chunks_indexed = await service.index_library(library_id)
@@ -72,17 +72,17 @@ async def search_library(
     Returns a list of chunks sorted by similarity to the query vector.
     """
     from loguru import logger
-    
+
     try:
         # Log search request
         logger.info(f"Search lib {library_id}, dim: {len(query.embedding)}")
-        
+
         # Execute search
         results = await service.search(
-            library_id, 
-            query.embedding, 
+            library_id,
+            query.embedding,
             query.k,
-            query.metadata_filters if query.metadata_filters else None
+            query.metadata_filters if query.metadata_filters else None,
         )
 
         # Convert to SearchResponse schema
@@ -108,7 +108,7 @@ async def search_library(
         logger.error(f"Validation error searching library {library_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="No query embedding."
+            detail="No query embedding.",
         ) from e
     except Exception as e:
         logger.error(f"Unexpected error searching library {library_id}: {str(e)}")

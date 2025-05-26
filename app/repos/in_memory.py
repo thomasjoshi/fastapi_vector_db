@@ -264,9 +264,7 @@ class InMemoryRepo:
                 )
 
             # Create a new list of documents without the deleted document
-            updated_docs = [
-                doc for doc in library.documents if doc.id != document_id
-            ]
+            updated_docs = [doc for doc in library.documents if doc.id != document_id]
 
             # Create a new library with the updated documents list
             updated_library = Library(
@@ -419,21 +417,21 @@ _repo = InMemoryRepo()
 async def initialize_repo() -> InMemoryRepo:
     """Initialize the repository and load persisted data if enabled."""
     global _repo
-    
+
     # Initialize persistence
     persistence = get_persistence()
     _repo._persistence = persistence
-    
+
     # Load any persisted data
     libraries = await persistence.load_from_disk()
     if libraries:
         with _repo._lock.write_lock():
             _repo._libraries = libraries
             logger.info(f"Loaded {len(libraries)} libraries from persistence")
-    
+
     # Start auto-save background task if enabled
     await persistence.start_auto_save(lambda: _repo._libraries)
-    
+
     return _repo
 
 

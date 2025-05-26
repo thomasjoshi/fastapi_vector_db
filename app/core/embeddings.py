@@ -24,7 +24,7 @@ class EmbeddingGenerator:
 
         Args:
             api_key: Cohere API key (defaults to settings.COHERE_API_KEY)
-            model: Cohere embedding model to use (defaults to 
+            model: Cohere embedding model to use (defaults to
                 settings.COHERE_EMBEDDING_MODEL)
         """
         self.api_key = api_key or settings.COHERE_API_KEY
@@ -48,27 +48,26 @@ class EmbeddingGenerator:
 
         try:
             # Call Cohere API to generate embeddings
-            # Note: The Cohere client is not async, so we're using it in a way that 
+            # Note: The Cohere client is not async, so we're using it in a way that
             # won't block the event loop for this potentially blocking operation
             import asyncio
+
             response = await asyncio.to_thread(
                 self.client.embed,
                 texts=texts,
                 model=self.model,
                 input_type="search_document",
             )
-            
+
             # Extract embeddings from response
             embeddings = response.embeddings
-            
+
             logger.info(
                 f"Generated {len(embeddings)} embeddings using model {self.model}"
             )
             return embeddings
         except Exception as e:
-            logger.error(
-                f"Cohere API error generating embeddings: {str(e)}"
-            )
+            logger.error(f"Cohere API error generating embeddings: {str(e)}")
             # Return empty embeddings in case of error
             return [[] for _ in texts]
 
