@@ -3,8 +3,8 @@ Tests for search functionality.
 """
 
 import asyncio
+from typing import List
 from uuid import UUID, uuid4
-from typing import List, Tuple
 
 import pytest
 
@@ -12,8 +12,9 @@ from app.domain.models import Chunk, Document, Library
 from app.indexing.ball_tree import BallTreeCosine
 from app.indexing.linear_search import LinearSearchCosine
 from app.repos.in_memory import InMemoryRepo
-from app.services.search import SearchService
 from app.services.exceptions import ValidationError
+from app.services.search import SearchService
+
 
 def create_test_library() -> Library:
     """Create a test library with documents and chunks."""
@@ -184,7 +185,9 @@ async def test_reindex_library() -> None:
 
     # Query before re-indexing
     query_embedding = [0.9, 0.1, 0.0]  
-    results_before_reindex = await search_service.query(library.id, query_embedding, k=1)
+    results_before_reindex = await search_service.query(
+        library.id, query_embedding, k=1
+    )
     assert len(results_before_reindex) == 1
 
     # Add a new chunk to the library that is very similar to the query

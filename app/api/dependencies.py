@@ -3,6 +3,7 @@ Dependency injection for FastAPI.
 """
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends
 
@@ -11,7 +12,6 @@ from app.services.chunk import ChunkService
 from app.services.document import DocumentService
 from app.services.library import LibraryService, MetricsCallback, noop_metrics_callback
 from app.services.search import SearchService
-from uuid import UUID
 
 # Singleton instances for the application lifetime
 _repo = InMemoryRepo()

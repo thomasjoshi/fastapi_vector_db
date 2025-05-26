@@ -1,5 +1,5 @@
 import random
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, model_serializer
@@ -20,7 +20,9 @@ class Chunk(BaseModel):
     def serialize_model(self) -> Dict[str, Any]:
         return {
             "id": str(self.id).replace("-", ""),  # UUID without dashes
-            "document_id": str(self.document_id).replace("-", ""),  # UUID without dashes
+            "document_id": str(self.document_id).replace(
+                "-", ""
+            ),  # UUID without dashes
             "text": self.text,
             "embedding": self.embedding,
             "metadata": self.metadata,
@@ -59,7 +61,7 @@ class Library(BaseModel):
         }
 
     @classmethod
-    def example(cls) -> "Library":
+    def example(cls, id: Optional[UUID] = None) -> "Library":
         # Create a small example library with sample data
         chunks1 = [
             Chunk(
@@ -97,6 +99,7 @@ class Library(BaseModel):
         ]
 
         return cls(
+            id=id if id is not None else uuid4(),
             documents=documents,
             metadata={"name": "Example Library", "created_by": "AI Assistant"},
         )

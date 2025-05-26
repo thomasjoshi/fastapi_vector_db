@@ -31,7 +31,9 @@ class SearchService(Generic[T]):
     """
 
     def __init__(
-        self, repo: InMemoryRepo, index_class: Type[VectorIndex[UUID]] = LinearSearchCosine
+        self, 
+        repo: InMemoryRepo, 
+        index_class: Type[VectorIndex[UUID]] = LinearSearchCosine,
     ) -> None:
         """
         Initialize the search service.
@@ -306,8 +308,11 @@ class SearchService(Generic[T]):
                         all_chunks_with_embeddings.append(chunk)
 
             if not all_chunks_with_embeddings:
-                logger.warning(f"Library {library_id} has no embeddings to index or reindex.")
-                # If an old index was removed, and there's nothing new, effectively it's an empty index state
+                logger.warning(
+                    f"Library {library_id} has no embeddings to index or reindex."
+                )
+                # If an old index was removed, and there's nothing new to index,
+                # effectively it's an empty index state.
                 return 0
 
             # Determine dimension from the first available embedding
@@ -318,13 +323,20 @@ class SearchService(Generic[T]):
             ids_to_build = [c.id for c in all_chunks_with_embeddings]
 
             # Build the index
-            logger.info(f"Building index for library {library_id} with {len(embeddings_to_build)} embeddings of dimension {dim}")
+            logger.info(
+                f"Building index for library {library_id} with "
+                f"{len(embeddings_to_build)} embeddings of dimension {dim}"
+            )
             index.build(embeddings=embeddings_to_build, ids=ids_to_build)
             _indices[library_id] = index
             logger.info(
-                f"Successfully built index for library {library_id} with {len(embeddings_to_build)} embeddings"
+                f"Successfully built index for library {library_id} "
+                f"with {len(embeddings_to_build)} embeddings"
             )
-
+            self._metrics(
+                "index_library_success",
+                duration_ms=(time.time() - time.time()) * 1000,
+            )
             return len(embeddings_to_build)
 
     def _metrics(self, name: str, duration_ms: float) -> None:

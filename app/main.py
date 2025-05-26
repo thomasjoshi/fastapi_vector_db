@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Request, status
+from typing import Dict
+
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from loguru import logger
-from typing import Dict, Any
 
 from app.api.routers import chunks, documents, libraries, search
 from app.core.config import settings

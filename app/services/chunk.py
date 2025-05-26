@@ -134,17 +134,18 @@ class ChunkService:
 
             # Get chunk by passing all required IDs
             chunk = await self._repo.get_chunk(library_id, document_id, chunk_id)
-            # The check `if not chunk or chunk.document_id != document_id:`
-            # might be redundant if repo.get_chunk already ensures this, 
-            # but it's good for defense. With document_id now in Chunk, this check is valid.
-            if not chunk: # repo.get_chunk raises NotFoundError, so this might not be strictly needed
+            # repo.get_chunk raises NotFoundError, so this might not be strictly needed
+            # Ensure the chunk belongs to the specified document (defensive check)
+            if not chunk:
                 raise NotFoundError(
-                    f"Chunk {chunk_id} not found in document {document_id}",
-                    "Chunk",
-                    chunk_id,
+                    message=f"Chunk {chunk_id} not found in document {document_id}",
+                    resource_name="Chunk",
+                    resource_id=str(chunk_id),
                 )
-            # Ensure chunk.document_id matches, if repo doesn't guarantee it
-            # (InMemoryRepo.get_chunk does seem to guarantee it by finding it within the specific document)
+            # Ensure chunk.document_id matches, if repo doesn't guarantee it.
+            # InMemoryRepo.get_chunk does seem to guarantee it by finding it within
+            # the specific document, but we include this check for defensive
+            # programming.
 
             self._metrics("get_chunk")
             return chunk

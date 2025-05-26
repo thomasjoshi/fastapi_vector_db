@@ -7,13 +7,13 @@ import time
 from typing import (
     Any,
     Callable,
-    cast,
     Generic,
     List,
     Optional,
     Sequence,
     Tuple,
     TypeVar,
+    cast,
 )
 
 import numpy as np
@@ -168,9 +168,15 @@ class LinearSearchCosine(Generic[T]):
             if new_vectors:
                 new_matrix = np.array(new_vectors, dtype=np.float32)
                 if self._matrix.shape[0] == 0:
-                    self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], new_matrix)
+                    self._matrix = cast(
+                        np.ndarray[Tuple[int, int], np.dtype[np.float32]], 
+                        new_matrix
+                    )
                 else:
-                    self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], np.vstack([self._matrix, new_matrix]))
+                    self._matrix = cast(
+                        np.ndarray[Tuple[int, int], np.dtype[np.float32]], 
+                        np.vstack([self._matrix, new_matrix])
+                    )
                 self._ids.extend(new_ids)
 
         duration_ms = (time.time() - start_time) * 1000

@@ -2,7 +2,7 @@
 Vector indexing implementations for efficient similarity search.
 """
 
-from typing import List, Protocol, Tuple, TypeVar, Any
+from typing import Any, List, Protocol, Tuple, TypeVar
 
 T = TypeVar("T")
 

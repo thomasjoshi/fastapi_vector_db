@@ -10,7 +10,7 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Callable, List
+from typing import Any, Callable, Dict, Optional
 from uuid import UUID, uuid4
 
 from loguru import logger
@@ -118,8 +118,14 @@ class Persistence:
                     chunks = []
                     for chunk_data in doc_data.get("chunks", []):
                         chunk = Chunk(
-                            id=UUID(chunk_data["id"]) if "id" in chunk_data else uuid4(),
-                            document_id=UUID(doc_data["id"]),
+                            id=(
+                                UUID(chunk_data["id"])
+                                if "id" in chunk_data
+                                else uuid4()
+                            ),
+                            document_id=(
+                                UUID(doc_data["id"])
+                            ),
                             text=chunk_data["text"],
                             embedding=chunk_data["embedding"],
                             metadata=chunk_data.get("metadata", {}),
@@ -147,7 +153,9 @@ class Persistence:
             logger.error(f"Error loading database from disk: {e}")
             return {}
 
-    async def start_auto_save(self, get_libraries_func: Callable[[], Dict[UUID, Library]]) -> None:
+    async def start_auto_save(
+        self, get_libraries_func: Callable[[], Dict[UUID, Library]]
+    ) -> None:
         """
         Start the auto-save background task.
 

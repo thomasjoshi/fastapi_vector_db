@@ -3,9 +3,10 @@ Tests for the BallTreeCosine vector index.
 """
 
 import threading
+from typing import Dict, List
+
 import numpy as np
 import pytest
-from typing import Dict, List, Tuple
 
 from app.indexing.ball_tree import BallTreeCosine, DuplicateVectorError
 from app.indexing.linear_search import LinearSearchCosine
@@ -204,7 +205,8 @@ class TestBallTreeCosine:
         index.add("vec1", [1.0, 0.0, 0.0])
         index.build([[0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], ["vec2", "vec3"])
         index.query([1.0, 0.0, 0.0])
-        index.remove("vec2") # Remove an ID that was part of the build, metric for "remove"
+        # Remove an ID that was part of the build, metric for "remove"
+        index.remove("vec2")
 
         for op in ["add", "build", "query", "remove"]:
             assert op in metrics, f"Metric for '{op}' not found"

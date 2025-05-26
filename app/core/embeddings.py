@@ -5,8 +5,7 @@ This module provides functions to generate embeddings from text
 using the Cohere API.
 """
 
-from typing import cast, List, Optional
-from typing_extensions import Literal
+from typing import List, Optional, cast
 
 import cohere  # type: ignore[import-untyped]
 from loguru import logger

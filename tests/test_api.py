@@ -1,5 +1,7 @@
 """Tests for the Vector DB API."""
 
+from uuid import UUID
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -9,8 +11,6 @@ from app.domain.models import Chunk, Document, Library
 from app.main import app
 from app.repos.in_memory import _repo
 from tests.test_search import create_test_library
-from uuid import UUID
-from app.services.search import SearchService
 
 # Create a test client with a shared repository instance
 # Reset the repository before each test

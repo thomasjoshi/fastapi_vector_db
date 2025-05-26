@@ -5,9 +5,9 @@ This is a simple in-memory implementation of the repository interface.
 It uses a dictionary to store libraries and their documents.
 """
 import threading
-from typing import Dict, Optional, Type
 from types import TracebackType
-from uuid import UUID, uuid4
+from typing import Dict, Optional, Type
+from uuid import UUID
 
 from loguru import logger
 
@@ -65,7 +65,12 @@ class ReadWriteLock:
             self.rwlock.read_acquire()
             return self.rwlock
 
-        def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> None:
+        def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[TracebackType],
+        ) -> None:
             self.rwlock.read_release()
 
     class WriteLock:
@@ -78,7 +83,12 @@ class ReadWriteLock:
             self.rwlock.write_acquire()
             return self.rwlock
 
-        def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> None:
+        def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[TracebackType],
+        ) -> None:
             self.rwlock.write_release()
 
     def read_lock(self) -> "ReadLock":
@@ -107,31 +117,29 @@ class InMemoryRepo:
     # Library CRUD operations
 
     async def add_library(self, library: Library) -> UUID:
-        """
-        Add a library to the repository.
+        """Add a library to the repository.
+
         If the library has no ID, one will be generated.
         Returns the ID of the library.
         """
         logger.info(f"Repo.add_library: ID {library.id}, type: {type(library.id)}")
 
         with self._lock.write_lock():
-            # Library.id has a default_factory=uuid4, so it will always exist.
-            # The 'if library.id is None:' check is redundant and likely caused the unreachable code error.
-            # If a library comes in, it's assumed to have an ID. If a new one needs to be made
-            # from data that lacks an ID, that should be handled before calling add_library
-            # or by a different method (e.g., create_library_from_data).
-            # Removing the block:
-            # if library.id is None:
-            #     library = Library(
-            #         id=uuid4(), # This was line 119 where error was reported
-            #         documents=library.documents,
-            #         metadata=library.metadata,
-            #     )
+            # The 'if library.id is None:' check is redundant and likely caused
+            # the unreachable code error. If a library comes in, it's assumed to
+            # have an ID. If a new one needs to be made from data that lacks an
+            # ID, that should be handled before calling add_library or by a
+            # different method (e.g., create_library_from_data). Removing the block.
 
             # Add the library to the dictionary
             if library.id in self._libraries:
-                # To prevent overwriting, though the method signature doesn't suggest update_or_create
-                logger.warning(f"Library with ID {library.id} already exists. Overwriting.")
+                # To prevent overwriting, though the method signature doesn't
+                # suggest update_or_create capabilities. This is a warning to
+                # indicate that the library already exists and will be overwritten.
+                logger.warning(
+                    f"Library with ID {library.id} already exists. "
+                    "Overwriting existing library."
+                )
             self._libraries[library.id] = library
             logger.info(f"Repo.add_library: Added. Keys: {list(self._libraries)}")
             return library.id

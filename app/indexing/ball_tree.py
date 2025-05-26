@@ -169,9 +169,15 @@ class BallTreeCosine(Generic[T]):
 
                 # Add to matrix
                 if self._matrix.shape[0] == 0:
-                    self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], np.array([normalized], dtype=np.float32))
+                    self._matrix = cast(
+                        np.ndarray[Tuple[int, int], np.dtype[np.float32]],
+                        np.array([normalized], dtype=np.float32)
+                    )
                 else:
-                    self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], np.vstack([self._matrix, normalized]))
+                    self._matrix = cast(
+                        np.ndarray[Tuple[int, int], np.dtype[np.float32]],
+                        np.vstack([self._matrix, normalized])
+                    )
 
                 # Add to ID mappings
                 self._ids.append(id)
@@ -222,7 +228,11 @@ class BallTreeCosine(Generic[T]):
             # Normalize all vectors in one operation
             norms = np.linalg.norm(vectors, axis=1, keepdims=True)
             norms[norms == 0] = 1e-9  # Avoid division by zero
-            self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], vectors / norms)
+            normalized_vectors = vectors / norms
+            self._matrix = cast(
+                np.ndarray[Tuple[int, int], np.dtype[np.float32]],
+                normalized_vectors
+            )
 
             self._ids = list(ids)
 
@@ -259,7 +269,10 @@ class BallTreeCosine(Generic[T]):
 
             # If it's the last vector, just remove it
             if idx == len(self._ids) - 1:
-                self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], self._matrix[:-1])
+                self._matrix = cast(
+                    np.ndarray[Tuple[int, int], np.dtype[np.float32]],
+                    self._matrix[:-1]
+                )
                 self._ids.pop()
                 del self._id_to_idx[id]
             else:
@@ -268,7 +281,10 @@ class BallTreeCosine(Generic[T]):
 
                 # Update the matrix
                 self._matrix[idx] = self._matrix[-1]
-                self._matrix = cast(np.ndarray[Tuple[int, int], np.dtype[np.float32]], self._matrix[:-1])
+                self._matrix = cast(
+                    np.ndarray[Tuple[int, int], np.dtype[np.float32]],
+                    self._matrix[:-1]
+                )
 
                 # Update the ID mappings
                 self._ids[idx] = last_id
@@ -459,18 +475,16 @@ class BallTreeCosine(Generic[T]):
             return
 
         # Calculate cosine similarity to the center
-        assert node.center is not None, "Internal node must have a center"
+        assert node.center is not None, (
+            "Internal node must have a center for axis comparison"
+        )
         center_sim = float(np.dot(query, node.center))
 
         # Calculate cosine distance to center
         dist_to_center = 1.0 - center_sim
 
         # Get the worst distance in our current best results
-        worst_best_distance = float("inf")
-        if len(best) >= k:
-            worst_best_distance = 1.0 - (
-                -best[0][0]
-            )  # Convert from similarity to distance
+        worst_best_distance = 1.0 + best[0][0] if len(best) >= k else float("inf")
 
         # If the node is too far away, we can skip it
         # This is the key pruning condition: if the closest point in the node
@@ -480,7 +494,6 @@ class BallTreeCosine(Generic[T]):
 
         # Decide which child to search first based on the splitting axis
         assert node.axis is not None, "Internal node must have a splitting axis"
-        assert node.center is not None, "Internal node must have a center for axis comparison"
         left_first = query[node.axis] <= node.center[node.axis]
 
         if left_first:
