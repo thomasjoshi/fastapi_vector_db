@@ -2,10 +2,10 @@
 Router for search operations.
 """
 
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Annotated
 
 from app.api.dependencies import get_search_service
 from app.api.schemas.chunk import (
@@ -75,9 +75,7 @@ async def search_library(
     
     try:
         # Log search request
-        logger.info(f"Searching library {library_id}, query dim: {len(query.embedding)}")
-        if query.metadata_filters:
-            logger.info(f"Filters: {query.metadata_filters}")
+        logger.info(f"Search lib {library_id}, dim: {len(query.embedding)}")
         
         # Execute search
         results = await service.search(

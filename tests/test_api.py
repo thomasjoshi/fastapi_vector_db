@@ -7,11 +7,7 @@ from loguru import logger
 
 from app.domain.models import Chunk, Document, Library
 from app.main import app
-from app.repos.in_memory import _repo, InMemoryRepo
-from app.services.chunk import ChunkService
-from app.services.document import DocumentService
-from app.services.library import LibraryService
-from app.services.search import SearchService
+from app.repos.in_memory import _repo
 from tests.test_search import create_test_library
 
 # Create a test client with a shared repository instance

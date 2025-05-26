@@ -1,6 +1,7 @@
+import time
 from typing import Protocol
 from uuid import UUID
-import time
+
 from loguru import logger
 
 from app.domain.models import Library
@@ -140,12 +141,9 @@ class LibraryService:
         start_time = time.time()
         logger.info(f"Updating library with ID {library_id}")
         try:
-            # Try atomic update first
             if not await self._repo.update_library_if_exists(library_id, updated):
-                # If atomic update fails, ensure the library exists to get the proper error
                 await self._ensure_exists(library_id)
-                # Should not happen
-                raise RuntimeError(f"Failed to update library with ID {library_id}")
+                raise RuntimeError(f"Update failed for lib ID {library_id}")
             duration_ms = (time.time() - start_time) * 1000
             self._metrics("library.update", duration_ms=duration_ms)
         except NotFoundError as e:
@@ -178,7 +176,6 @@ class LibraryService:
         start_time = time.time()
         logger.info(f"Deleting library with ID {library_id}")
         try:
-            # Ensure the library exists before attempting deletion
             await self._repo.get_library(library_id)
             await self._repo.delete_library(library_id)
             duration_ms = (time.time() - start_time) * 1000

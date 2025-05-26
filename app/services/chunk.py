@@ -2,9 +2,9 @@
 Service for managing chunks.
 This is a stub implementation that will be expanded in future increments.
 """
-import time
-from typing import List, Tuple
+from typing import List
 from uuid import UUID
+
 from loguru import logger
 
 from app.domain.models import Chunk

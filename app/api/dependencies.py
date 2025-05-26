@@ -2,8 +2,9 @@
 Dependency injection for FastAPI.
 """
 
-from fastapi import Depends
 from typing import Annotated
+
+from fastapi import Depends
 
 from app.repos.in_memory import InMemoryRepo
 from app.services.chunk import ChunkService

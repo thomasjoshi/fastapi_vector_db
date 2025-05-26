@@ -1,10 +1,10 @@
 """
 Router for document operations.
 """
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
-from typing import Annotated
 
 from app.api.dependencies import get_document_service
 from app.api.schemas.document import DocumentCreate, DocumentRead

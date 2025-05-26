@@ -12,15 +12,19 @@ import time
 from typing import Any, Dict, List
 from uuid import uuid4
 
-# Add the parent directory to the path so we can import our modules
-# This must be done before attempting to import from 'app'
-_current_dir = os.path.dirname(os.path.abspath(__file__))
-_parent_dir = os.path.dirname(_current_dir)
-sys.path.append(_parent_dir)
-
 import numpy as np
-from app.indexing.ball_tree import BallTreeCosine  # noqa: E402
-from app.indexing.linear_search import LinearSearchCosine  # noqa: E402
+
+try:
+    from app.indexing.ball_tree import BallTreeCosine
+    from app.indexing.linear_search import LinearSearchCosine
+except ImportError:
+    # Add the parent directory to the path if 'app' module is not found
+    _current_dir = os.path.dirname(os.path.abspath(__file__))
+    _parent_dir = os.path.dirname(_current_dir)
+    if _parent_dir not in sys.path:
+        sys.path.append(_parent_dir)
+    from app.indexing.ball_tree import BallTreeCosine
+    from app.indexing.linear_search import LinearSearchCosine
 
 
 def generate_random_vectors(
