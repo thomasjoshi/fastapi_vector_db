@@ -139,7 +139,7 @@ class ChunkService:
             if not chunk:
                 raise NotFoundError(
                     message=f"Chunk {chunk_id} not found in document {document_id}",
-                    resource_name="Chunk",
+                    resource_type="Chunk",
                     resource_id=str(chunk_id),
                 )
             # Ensure chunk.document_id matches, if repo doesn't guarantee it.
