@@ -87,15 +87,20 @@ class EmbeddingGenerator:
         return embeddings[0] if embeddings else []
 
 
-# Singleton instance
-_embedding_generator = EmbeddingGenerator()
+# Singleton instance, initialized lazily
+_embedding_generator: Optional[EmbeddingGenerator] = None
 
 
 def get_embedding_generator() -> EmbeddingGenerator:
     """
     Get the singleton embedding generator instance.
+    Creates the instance on first call if it doesn't exist.
 
     Returns:
         EmbeddingGenerator instance
     """
+    global _embedding_generator
+    if _embedding_generator is None:
+        logger.info("Initializing EmbeddingGenerator instance.")
+        _embedding_generator = EmbeddingGenerator()
     return _embedding_generator
