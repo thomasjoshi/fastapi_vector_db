@@ -12,11 +12,13 @@ import time
 from typing import Any, Dict, List
 from uuid import uuid4
 
-import numpy as np
-
 # Add the parent directory to the path so we can import our modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# This must be done before attempting to import from 'app'
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_parent_dir = os.path.dirname(_current_dir)
+sys.path.append(_parent_dir)
 
+import numpy as np
 from app.indexing.ball_tree import BallTreeCosine
 from app.indexing.linear_search import LinearSearchCosine
 
@@ -60,7 +62,7 @@ def benchmark_index(
     query_times = []
     for query in query_vectors:
         start_time = time.time()
-        results = index.query(query, k=k)
+        _results = index.query(query, k=k)
         query_time = time.time() - start_time
         query_times.append(query_time)
     
@@ -81,7 +83,7 @@ def run_benchmarks() -> None:
     query_count = 100
     k = 10
     
-    results = []
+    results: List[Dict[str, Any]] = []
     
     for dimensions in dimensions_list:
         print(f"\nBenchmarking with {dimensions} dimensions:")
@@ -116,7 +118,8 @@ def run_benchmarks() -> None:
     print("-" * 80)
     for result in results:
         print(
-            f"{result['name']:<30} {result['build_time']:<15.4f} {result['avg_query_time']:<15.6f}"
+            f"{result['name']:<30} {result['build_time']:<15.4f} "
+            f"{result['avg_query_time']:<15.6f}"
         )
 
 

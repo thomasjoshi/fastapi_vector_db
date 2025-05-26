@@ -3,14 +3,18 @@
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+from loguru import logger
 
 from app.domain.models import Chunk, Document, Library
 from app.main import app
-
-# Create a test client with a shared repository instance
-from app.repos.in_memory import _repo
+from app.repos.in_memory import _repo, InMemoryRepo
+from app.services.chunk import ChunkService
+from app.services.document import DocumentService
+from app.services.library import LibraryService
+from app.services.search import SearchService
 from tests.test_search import create_test_library
 
+# Create a test client with a shared repository instance
 # Reset the repository before each test
 _repo._libraries = {}
 
@@ -165,8 +169,6 @@ def test_centralized_error_handling() -> None:
 @pytest.mark.asyncio
 async def test_document_chunk_search_flow_async() -> None:
     """Async implementation of the document chunk search flow test."""
-    from loguru import logger
-
     from app.repos.in_memory import InMemoryRepo
     from app.services.chunk import ChunkService
     from app.services.document import DocumentService
@@ -235,20 +237,15 @@ async def test_document_chunk_search_flow_async() -> None:
     # Verify the library is deleted
     try:
         await library_service.get_library(library_id)
-        assert False, "Library should have been deleted"
+        raise AssertionError("Library should have been deleted")
     except Exception:
         # Expected exception
         pass
 
 
-import pytest
-
-
 @pytest.mark.asyncio
 async def test_document_chunk_search_flow() -> None:
-    """Test the full flow: create lib → add doc → add chunks → index → search → delete."""
-    from loguru import logger
-
+    """Test full flow: create lib → add doc → chunks → index → search → delete."""
     from app.repos.in_memory import InMemoryRepo
     from app.services.chunk import ChunkService
     from app.services.document import DocumentService
@@ -320,7 +317,7 @@ async def test_document_chunk_search_flow() -> None:
     # Verify the library is deleted
     try:
         await library_service.get_library(library_id)
-        assert False, "Library should have been deleted"
+        raise AssertionError("Library should have been deleted")
     except Exception:
         # Expected exception
         pass

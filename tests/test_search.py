@@ -119,7 +119,7 @@ async def test_search_not_indexed():
     search_service = SearchService(repo, LinearSearchCosine)
 
     # Try to query without indexing first
-    with pytest.raises(Exception):
+    with pytest.raises(KeyError):
         await search_service.query(library.id, [1.0, 0.0, 0.0], k=3)
 
 

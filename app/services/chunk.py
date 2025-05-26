@@ -5,6 +5,7 @@ This is a stub implementation that will be expanded in future increments.
 import time
 from typing import List, Tuple
 from uuid import UUID
+from loguru import logger
 
 from app.domain.models import Chunk
 from app.repos.in_memory import InMemoryRepo
@@ -87,7 +88,7 @@ class ChunkService:
             NotFoundError: If the library or document does not exist
         """
         try:
-            # Create a new chunk with the document_id since we can't modify frozen instance
+            # Create new chunk with document_id; can't modify frozen instance
             new_chunk = Chunk(
                 id=chunk.id,
                 text=chunk.text,
@@ -215,12 +216,7 @@ class ChunkService:
     ) -> List[Chunk]:
         """Search for similar chunks within a library."""
         # This method is not implemented in ChunkService
-        # Search functionality is typically handled by a dedicated SearchService
-        # that uses an indexed representation of chunks (e.g., from a vector DB)
-        logger.warning(
-            "search_chunks is not implemented in ChunkService. Use SearchService."
-        )
-        # This method is not implemented in ChunkService
+        logger.warning("Use SearchService for search functionality.")
         raise NotImplementedError(
             "Search functionality is implemented in SearchService"
         )

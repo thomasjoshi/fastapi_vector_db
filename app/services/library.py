@@ -144,20 +144,23 @@ class LibraryService:
             if not await self._repo.update_library_if_exists(library_id, updated):
                 # If atomic update fails, ensure the library exists to get the proper error
                 await self._ensure_exists(library_id)
-                # This should never happen if _ensure_exists doesn't raise
+                # This should not happen if _ensure_exists doesn't raise
                 raise RuntimeError(f"Failed to update library with ID {library_id}")
-            self._metrics("library.update", duration_ms=(time.time() - start_time) * 1000)
+            duration_ms = (time.time() - start_time) * 1000
+            self._metrics("library.update", duration_ms=duration_ms)
         except NotFoundError as e:
-            logger.warning(f"Library not found for update: {library_id}")
+            logger.warning(f"Lib not found for update: {library_id}")
+            duration_ms = (time.time() - start_time) * 1000
             self._metrics(
                 "library.update_not_found",
-                duration_ms=(time.time() - start_time) * 1000,
+                duration_ms=duration_ms,
             )
             raise e
         except Exception as e:
             logger.error(f"Error updating library {library_id}: {e}")
+            duration_ms = (time.time() - start_time) * 1000
             self._metrics(
-                "library.update_error", duration_ms=(time.time() - start_time) * 1000
+                "library.update_error", duration_ms=duration_ms
             )
             raise
 
@@ -178,17 +181,20 @@ class LibraryService:
             # Ensure the library exists before attempting deletion
             await self._repo.get_library(library_id)
             await self._repo.delete_library(library_id)
-            self._metrics("library.delete", duration_ms=(time.time() - start_time) * 1000)
+            duration_ms = (time.time() - start_time) * 1000
+            self._metrics("library.delete", duration_ms=duration_ms)
         except NotFoundError as e:
-            logger.warning(f"Library not found for deletion: {library_id}")
+            logger.warning(f"Lib not found for deletion: {library_id}")
+            duration_ms = (time.time() - start_time) * 1000
             self._metrics(
                 "library.delete_not_found",
-                duration_ms=(time.time() - start_time) * 1000,
+                duration_ms=duration_ms,
             )
             raise e
         except Exception as e:
             logger.error(f"Error deleting library {library_id}: {e}")
+            duration_ms = (time.time() - start_time) * 1000
             self._metrics(
-                "library.delete_error", duration_ms=(time.time() - start_time) * 1000
+                "library.delete_error", duration_ms=duration_ms
             )
             raise

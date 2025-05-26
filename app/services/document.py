@@ -56,11 +56,13 @@ class DocumentService:
             # Get documents from the library
             documents = library.documents
 
-            self._metrics("list_documents", duration_ms=(time.time() - start_time) * 1000)
+            duration_ms = (time.time() - start_time) * 1000
+            self._metrics("list_documents", duration_ms=duration_ms)
             return documents
         except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
             self._metrics(
-                "list_documents_error", duration_ms=(time.time() - start_time) * 1000
+                "list_documents_error", duration_ms=duration_ms
             )
             raise NotFoundError(
                 f"Library with ID {library_id} not found", "Library", library_id
@@ -83,13 +85,15 @@ class DocumentService:
         start_time = time.time()
         try:
             # Add document to the library
-            result = await self._repo.add_document(library_id, document)
+            await self._repo.add_document(library_id, document)
 
-            self._metrics("add_document", duration_ms=(time.time() - start_time) * 1000)
+            duration_ms = (time.time() - start_time) * 1000
+            self._metrics("add_document", duration_ms=duration_ms)
             return document
         except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
             self._metrics(
-                "add_document_error", duration_ms=(time.time() - start_time) * 1000
+                "add_document_error", duration_ms=duration_ms
             )
             raise NotFoundError(
                 f"Library with ID {library_id} not found", "Library", library_id
